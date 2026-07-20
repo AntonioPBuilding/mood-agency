@@ -8,6 +8,7 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from 'react'
 import { CONTROL } from '@/content'
+import { setOverlay } from '@/core/overlayStore'
 import { getQuality } from '@/core/quality'
 import { subscribeChapter } from '@/core/scrollStore'
 import { ChapterSection } from './ChapterSection'
@@ -122,23 +123,22 @@ const wrapCentered = (v: number, c: number) => mod(v + c / 2, c) - c / 2
  * Mientras la ficha está abierta hay un panel OPACO tapando la pantalla entera:
  * el Núcleo se sigue renderizando para nadie. Esta sección NO desmonta ni pausa
  * el Canvas —eso rompería la regla 1 de ARCHITECTURE.md y encima no es suya—:
- * sólo AVISA, por dos vías redundantes y sin acoplar módulos.
+ * sólo DECLARA que hay una capa encima y deja que `App` decida.
  *
- *   1. Evento en `window`, `detail: { open: boolean }`. Para suscribirse:
+ * La vía real es `overlayStore`, que es quien escucha `App`:
  *
- *        let paused = false
- *        window.addEventListener('mood:gallery-modal', (e) => {
- *          paused = (e as CustomEvent<{ open: boolean }>).detail.open
- *        })
- *
- *      Ese `paused` es el objeto mutable de módulo que se lee por frame, sin
- *      estado de React y sin que `scenes/` tenga que importar de `sections/`.
+ *   1. `setOverlay('gallery-modal', open)`. Importar `core/` desde `sections/`
+ *      es la dirección correcta de dependencia —`core` es la capa de abajo— y
+ *      es lo que ya hacen `quality` y `scrollStore` unas líneas más arriba.
+ *      Lo que sí estaría mal es el camino inverso: que `scenes/` importase de
+ *      `sections/`. Eso no ocurre: `scenes/` no conoce a nadie de aquí.
  *
  *   2. `data-gallery-modal` en `<html>`, por si alguien engancha tarde y
  *      necesita el valor inicial (o por si el CSS quiere reaccionar).
+ *
+ * El id importa: `overlayStore` lleva un conjunto, no un booleano, para que dos
+ * capas solapadas no se pisen al cerrarse.
  */
-const GALLERY_MODAL_EVENT = 'mood:gallery-modal'
-
 let modalOpen = false
 
 function setGalleryModal(open: boolean): void {
@@ -146,7 +146,7 @@ function setGalleryModal(open: boolean): void {
   modalOpen = open
   if (open) document.documentElement.dataset.galleryModal = 'open'
   else delete document.documentElement.dataset.galleryModal
-  window.dispatchEvent(new CustomEvent(GALLERY_MODAL_EVENT, { detail: { open } }))
+  setOverlay('gallery-modal', open)
 }
 
 /**
