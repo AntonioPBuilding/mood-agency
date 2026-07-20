@@ -1,0 +1,187 @@
+@import 'tailwindcss';
+
+/* ────────────────────────────────────────────────────────────────────────────
+   MOOD AGENCY · design tokens
+   Los tres mundos viven acá. Los componentes NUNCA hardcodean un hex.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* VOID — potencial puro */
+  --color-void: #050505;
+  --color-bone: #f2f0eb;
+  --color-void-accent: #8a7cff;
+  --color-void-warm: #ff7a59;
+
+  /* MOOD CONTROL — el show */
+  --color-control-bg: #0a0208;
+  --color-control-violet: #b026ff;
+  --color-control-blue: #00a3ff;
+  --color-control-red: #ff2d55;
+
+  /* MOOD NET — la precisión */
+  --color-net-bg: #0b0d0f;
+  --color-net-cyan: #00e5ff;
+  --color-net-blue: #2e6bff;
+  --color-net-grey: #8b95a5;
+
+  /* Tipografía. Archivo es VARIABLE en wght + wdth: el ancho se anima con el
+     scroll. Por eso está elegida, no por gusto. */
+  --font-display: 'Archivo', 'Arial Narrow', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Escala tipográfica fluida. Los títulos son la imagen, no un adorno — pero
+     la imagen tiene que CABER.
+
+     El número que manda no es el mínimo ni el tope: es el COEFICIENTE vw, que es
+     el que decide el tamaño en todo el rango útil (1100-1900px). Ahí estaba el
+     problema. Con 18vw el titular del hero pedía 346px a 1920, y con 6.5vw las
+     filas de servicios medían 96px: nueve de ellas más un titular de tres líneas
+     no entran en 1080px de alto ni forzándolas, así que la sección de servicios
+     dejaba de enseñar servicios.
+
+     Reescalado ~33% en los tres escalones display, manteniendo las proporciones
+     entre ellos (a 1920: 221 / 144 / 60 / 26 → razones 1.53, 2.4, 2.3). Sigue
+     siendo tipografía display; deja de ser un grito.
+
+     Los topes se alcanzan todos alrededor de los ~1800-1950px: a partir de ahí
+     el texto deja de crecer y lo que crece es el aire. Es la corrección concreta
+     para ultrawide, donde un coeficiente vw alto disparaba el cuerpo sin que la
+     ALTURA de pantalla creciera con él. */
+  --text-mega: clamp(3rem, 11.5vw, 14rem);
+  --text-giga: clamp(2.25rem, 7.5vw, 9rem);
+  --text-huge: clamp(1.75rem, 3.4vw, 3.75rem);
+  --text-lead: clamp(1.0625rem, 1.5vw, 1.625rem);
+
+  /* Easings. Nada lineal en esta landing. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quint: cubic-bezier(0.83, 0, 0.17, 1);
+}
+
+/* Variables de runtime: el mundo activo las reescribe desde JS a baja
+   frecuencia. Permite que el DOM cambie de mundo junto con la escena 3D. */
+:root {
+  --world-bg: #050505;
+  --world-ink: #f2f0eb;
+  --world-accent: #f2f0eb;
+  --world-accent-2: #8a7cff;
+}
+
+@layer base {
+  * {
+    /* El cursor lo dibujamos nosotros. */
+    cursor: none;
+  }
+
+  html {
+    background-color: var(--color-void);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--world-bg);
+    color: var(--world-ink);
+    font-family: var(--font-display);
+    overflow-x: hidden;
+    transition: background-color 0.6s var(--ease-out-expo);
+  }
+
+  /* Sin scrollbar visible: el scroll es de Lenis, no del navegador. */
+  body::-webkit-scrollbar {
+    display: none;
+  }
+
+  ::selection {
+    background: var(--world-accent);
+    color: var(--world-bg);
+  }
+
+  /* Accesibilidad: el foco por teclado SIEMPRE se ve, aunque el cursor no.
+     Una landing premium que no se puede tabular no es premium, es rota. */
+  :focus-visible {
+    outline: 2px solid var(--world-accent);
+    outline-offset: 4px;
+  }
+}
+
+@layer utilities {
+  /* Títulos gigantes: el tracking negativo es obligatorio a estos tamaños,
+     si no las letras flotan sueltas.
+
+     Al bajar la escala hay que RELAJAR el tracking en la misma dirección: el
+     apretado óptico depende del cuerpo, no del estilo. Lo que a 346px es
+     cohesión, a 221px es un choque de astas. Por eso los tres escalones pierden
+     una pizca de negativo.
+
+     El line-height va al revés: se abre un punto porque el interlineado cerrado
+     se paga en legibilidad cuando el glifo encoge, y porque estos titulares
+     llevan diacríticos españoles (¿EN QUÉ MOOD ESTÁS?) que a 0.82 se comen la
+     línea de arriba. Sigue dentro de la banda display (0.85-0.96). */
+  .type-mega {
+    font-size: var(--text-mega);
+    line-height: 0.85;
+    letter-spacing: -0.04em;
+    font-weight: 800;
+  }
+
+  .type-giga {
+    font-size: var(--text-giga);
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+  }
+
+  .type-huge {
+    font-size: var(--text-huge);
+    line-height: 0.96;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+
+  /* TEXTO SOBRE LA ESCENA 3D.
+     Subir la opacidad no alcanza: por muy blanco que pongas el texto, sigue
+     habiendo partículas blancas detrás compitiendo, y el ojo no puede aislar
+     la forma de la letra del ruido. Lo que hace falta es SEPARACIÓN, y eso se
+     consigue con un halo del color del mundo pegado al contorno.
+     Es la misma razón por la que los subtítulos de cine llevan borde. */
+  .on-scene {
+    text-shadow:
+      0 0 6px var(--world-bg),
+      0 0 14px var(--world-bg),
+      0 0 28px var(--world-bg),
+      0 1px 2px rgb(0 0 0 / 0.9);
+  }
+
+  /* Label técnico de Mood Net. */
+  .type-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  /* Máscara para reveals: el texto sube desde abajo, recortado. */
+  .mask-line {
+    overflow: hidden;
+    display: block;
+  }
+
+  /* Capa propia en GPU. Usar SÓLO en elementos que animan de verdad:
+     ponerlo en todo es la forma más rápida de matar el rendimiento. */
+  .gpu {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+  }
+}
+
+/* El usuario pidió menos movimiento. Se respeta: misma historia, sin viaje. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

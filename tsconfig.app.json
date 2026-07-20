@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "allowArbitraryExtensions": true,
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Alias @/ → src/. Tiene que existir TAMBIÉN en vite.config.ts:
+       TypeScript resuelve los tipos, Vite resuelve el bundle. Si sólo está
+       en uno de los dos, el otro falla.
+
+       Sin `baseUrl`: TypeScript 6 lo marca como ERROR (TS5101), no como
+       warning. Con `moduleResolution: bundler` los `paths` ya se resuelven
+       relativos a este archivo, así que no hace ninguna falta. */
+    "paths": { "@/*": ["./src/*"] },
+
+    /* Linting. El template de Vite NO trae `strict`. Sin esto el proyecto se
+       llena de `any` implícitos y el tipado deja de servir para algo. */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["src"]
+}
