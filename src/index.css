@@ -47,10 +47,16 @@
      el texto deja de crecer y lo que crece es el aire. Es la corrección concreta
      para ultrawide, donde un coeficiente vw alto disparaba el cuerpo sin que la
      ALTURA de pantalla creciera con él. */
-  --text-mega: clamp(3rem, 11.5vw, 14rem);
-  --text-giga: clamp(2.25rem, 7.5vw, 9rem);
-  --text-huge: clamp(1.75rem, 3.4vw, 3.75rem);
-  --text-lead: clamp(1.0625rem, 1.5vw, 1.625rem);
+  /* Los escalones guardan un ratio de ~1.5 entre sí en la zona alta, que es
+     donde se lee la jerarquía. El salto grande y deliberado está entre `huge`
+     y `lead`: ahí es donde la tipografía deja de ser cartel y pasa a ser texto,
+     y esa frontera SÍ tiene que notarse.
+
+     A 1920px: 152 / 100 / 60 / 26 px. */
+  --text-mega: clamp(2.75rem, 8vw, 9.5rem);
+  --text-giga: clamp(2.25rem, 5.25vw, 6.25rem);
+  --text-huge: clamp(1.75rem, 3.15vw, 3.75rem);
+  --text-lead: clamp(1.0625rem, 1.35vw, 1.625rem);
 
   /* Easings. Nada lineal en esta landing. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
