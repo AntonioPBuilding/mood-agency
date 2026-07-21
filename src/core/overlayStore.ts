@@ -15,12 +15,12 @@
  * │  import { setOverlay } from '@/core/overlayStore'                        │
  * │                                                                          │
  * │  // Al abrir / cerrar el modal:                                          │
- * │  setOverlay('gallery-modal', true)                                       │
- * │  setOverlay('gallery-modal', false)                                      │
+ * │  setOverlay('roster-modal', true)                                       │
+ * │  setOverlay('roster-modal', false)                                      │
  * │                                                                          │
  * │  // O, si preferís no importar nada (mismo efecto):                      │
  * │  window.dispatchEvent(new CustomEvent('mood:overlay', {                  │
- * │    detail: { id: 'gallery-modal', open: true },                          │
+ * │    detail: { id: 'roster-modal', open: true },                          │
  * │  }))                                                                     │
  * │                                                                          │
  * └──────────────────────────────────────────────────────────────────────────┘

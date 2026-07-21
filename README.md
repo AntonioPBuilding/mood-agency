@@ -1,7 +1,13 @@
-# Mood Agency
+# Mood Control
 
-Landing de una agencia de eventos. Una sola página, 14 capítulos encadenados por
-scroll, con un fondo de partículas WebGL que reacciona al avance de la lectura.
+Landing de **Mood Control**, con base en Utrera (Sevilla) y sus dos divisiones:
+**Mood Agency** (eventos, DJs, festivales) y **Mood Creative** (web, IA, software
+a medida). Una sola página, 14 capítulos encadenados por scroll, con un fondo de
+partículas WebGL que reacciona al avance de la lectura.
+
+> ⚠ Los ids internos `'control'` y `'net'` **no** son nombres de marca:
+> `'control'` es el mundo de eventos (Mood Agency) y `'net'` el de tecnología
+> (Mood Creative). Ver la cabecera de [`src/content.ts`](src/content.ts).
 
 ---
 
@@ -21,9 +27,10 @@ Y listo: <http://localhost:5173>.
 | `npm run preview` | Sirve el build ya hecho |
 | `npm run lint` | Oxlint |
 
-> Las fotos del portfolio todavía no están: `public/gallery/` está vacío, así que
-> las tarjetas caen a un degradado de respaldo. Es el comportamiento esperado
-> hasta que lleguen las imágenes reales.
+> El capítulo `gallery` ya no es un portfolio: son las **cartas coleccionables**
+> del roster de artistas (`ARTISTS` en `src/content.ts`). No lleva ni una foto y
+> no hace falta subir ninguna — el arte de cada carta se genera de forma
+> determinista a partir del nombre del artista. Ver `src/sections/Roster.tsx`.
 
 ---
 

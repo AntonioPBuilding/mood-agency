@@ -12,7 +12,11 @@ export { Manifesto } from './Manifesto'
 export { Division } from './Division'
 export { ControlIntro } from './ControlIntro'
 export { ControlServices } from './ControlServices'
-export { Gallery } from './Gallery'
+/* Ocupa el capítulo `gallery`, que ya NO es una galería de proyectos sino las
+   cartas coleccionables del roster. El `ChapterId` se queda como está —está
+   cableado en la coreografía 3D y en `CHAPTER_MAP`—; el componente se llama por
+   lo que hace. */
+export { Roster } from './Roster'
 export { Blackout } from './Blackout'
 export { NetIntro } from './NetIntro'
 export { NetServices } from './NetServices'

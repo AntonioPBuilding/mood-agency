@@ -22,7 +22,9 @@ export const CHAPTER_LABELS: Record<ChapterId, string> = {
   division: 'División',
   controlIntro: 'Mood Agency',
   controlServices: 'Servicios de eventos',
-  gallery: 'Galería',
+  /* La clave es el id TÉCNICO del capítulo (no se toca: lo lee la escena 3D);
+     el valor es lo que ve el visitante, y ahí ya no hay galería sino artistas. */
+  gallery: 'Artistas',
   blackout: 'Apagón',
   netIntro: 'Mood Creative',
   netServices: 'Servicios de tecnología',

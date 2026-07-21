@@ -14,7 +14,6 @@ se pide como `/og.png`. Vite no los procesa, no les pone hash y no los optimiza
 | `og.png` (1200×630) | Tarjeta social publicada | exportado de `og.svg` |
 | `site.webmanifest` | Nombre, colores e iconos de la app | a mano |
 | `robots.txt` | Rastreadores | a mano |
-| `gallery/` | Fotos del portfolio | ver [`gallery/README.md`](gallery/README.md) |
 
 **Los `.svg` son la fuente. Los `.png` son producto.** Si hay que cambiar la
 marca o la tarjeta, se edita el SVG y se vuelve a exportar. Editar el PNG a mano

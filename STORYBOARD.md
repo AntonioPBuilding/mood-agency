@@ -1,4 +1,4 @@
-# Mood Agency — Dirección artística y storyboard
+# Mood Control — Dirección artística y storyboard
 
 ## El concepto: EL NÚCLEO
 
@@ -18,7 +18,7 @@ scrolleando porque **quiere ver en qué se convierte esa cosa**.
 
 ## Los tres mundos
 
-| | **VOID** | **MOOD CONTROL** | **MOOD NET** |
+| | **VOID** | **MOOD AGENCY** (id `control`) | **MOOD CREATIVE** (id `net`) |
 |---|---|---|---|
 | Rol | Potencial puro | El show | La precisión |
 | Fondo | `#050505` | `#0A0208` | `#0B0D0F` |
@@ -34,7 +34,7 @@ hardcodea un hex.
 
 ## El apagón de sala
 
-El momento que la gente va a recordar. Cuando termina Mood Control **no hay un
+El momento que la gente va a recordar. Cuando termina Mood Agency **no hay un
 fade**: pasa lo mismo que cuando se termina un show de verdad. Los neones se
 apagan uno a uno, el humo se disipa, negro total, un segundo de silencio... y se
 encienden las luces de sala. Blanco. Frío. Real.
@@ -60,14 +60,14 @@ Scroll global normalizado 0 → 1. Un solo timeline. Rangos en
 | Progreso | Capítulo | DOM | El Núcleo |
 |---|---|---|---|
 | — | **Preloader** | contador 0→100, `MOOD` se ensambla, "ENTER THE MOOD" | — |
-| `.00–.08` | **Hero** | `MOOD AGENCY` en mask-reveal, centro despejado | Esfera de noise respirando, iridiscente, partículas en órbita, parallax de mouse |
+| `.00–.08` | **Hero** | `MOOD CONTROL` en mask-reveal, centro despejado | Esfera de noise respirando, iridiscente, partículas en órbita, parallax de mouse |
 | `.08–.16` | **Manifiesto** | "No hacemos webs / No hacemos eventos / Creamos ESTADOS DE ÁNIMO" palabra a palabra | La cámara entra hacia el núcleo |
 | `.16–.24` | **División** | split 50/50 que se separa desde el centro | Fractura → partículas → wordmark `MOOD` → se parte en dos, violeta ← → cian |
-| `.24–.30` | **Control · intro** | `MOOD CONTROL` con glitch y aberración | Blackout, un beat, se encienden las luces de escenario. Humo |
+| `.24–.30` | **Agency · intro** | `MOOD AGENCY` con glitch y aberración | Blackout, un beat, se encienden las luces de escenario. Humo |
 | `.30–.40` | **Control · servicios** | 9 servicios tipo créditos de festival, hover neón | Lasers barriendo, luces rotando, flicker al beat |
-| `.40–.48` | **Galería** | carrusel con drag e inercia, muro curvo | Pantallas LED, máxima energía |
+| `.40–.48` | **Artistas** | 4 cartas coleccionables: inclinación 3D, holografía y arte generativo por nombre | Pantallas LED, máxima energía |
 | `.48–.54` | **Apagón** | una línea en el negro | **EL APAGÓN**: neones off uno a uno, humo se disipa, luz de sala |
-| `.54–.60` | **Net · intro** | `MOOD NET` con decode-text, grid técnica | Partículas en retícula perfecta, nodos que se conectan |
+| `.54–.60` | **Creative · intro** | `MOOD CREATIVE` con decode-text, grid técnica | Partículas en retícula perfecta, nodos que se conectan |
 | `.60–.68` | **Net · servicios** | 8 servicios como nodos; hover ilumina sus aristas | La red completa, líneas de 1px |
 | `.68–.80` | **Planes** | 3 paneles escalando en elaboración, sin cifras | **3 cristales**: cubo mate → prisma con refracción → cristal iridiscente con partículas propias |
 | `.80–.86` | **Stack** | marquee de tecnologías + método en 4 pasos | La red de fondo, quieta |
@@ -104,11 +104,19 @@ polígonos.
 
 | | low | mid | high |
 |---|---|---|---|
-| Partículas | 18k | 55k | 120k |
-| Detalle de esfera | 64 | 128 | 256 |
-| DPR máximo | 1.5 | 1.75 | 2 |
-| Post-processing | no | sí | sí |
-| Pasos volumétricos | 0 | 12 | 24 |
+| Partículas | 18k | 26k | 45k |
+| Detalle de esfera | 64 | 128 | 192 |
+| Presupuesto de píxeles | 1,1M | 1,8M | 2,4M |
+| Post-processing | bloom + tone | sin aberración ni grano | cadena completa |
+| Pasos volumétricos | 0 | 12 | 20 |
+
+El DPR **no se fija**: se deriva del presupuesto de píxeles (`dpr = √(presupuesto
+/ área)`). El post-proceso cuesta por píxel y escala con el cuadrado del DPR, así
+que fijarlo en 2 funde una GPU en 1440p y desaprovecha una pantalla pequeña.
+
+Y la calidad además se **mide en vivo**: si los FPS caen de forma sostenida, el
+tier baja solo. Nunca sube: una oscilación de calidad se nota mucho más que una
+calidad estable un escalón por debajo.
 
 Con `prefers-reduced-motion` se recorta el movimiento pero **no la narrativa**:
 las 14 secciones se leen igual.

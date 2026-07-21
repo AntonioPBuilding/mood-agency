@@ -26,7 +26,7 @@ import {
   Division,
   ControlIntro,
   ControlServices,
-  Gallery,
+  Roster,
   Blackout,
   NetIntro,
   NetServices,
@@ -250,7 +250,7 @@ export default function App() {
         <Division />
         <ControlIntro />
         <ControlServices />
-        <Gallery />
+        <Roster />
         <Blackout />
         <NetIntro />
         <NetServices />

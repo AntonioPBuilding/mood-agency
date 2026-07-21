@@ -1,4 +1,4 @@
-# Mood Agency — Contrato de arquitectura
+# Mood Control — Contrato de arquitectura
 
 > Leé esto ANTES de escribir código. Estas reglas no son sugerencias: son lo que
 > sostiene los 60fps y la coherencia narrativa de la landing.

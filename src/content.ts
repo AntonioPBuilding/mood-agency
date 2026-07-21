@@ -129,6 +129,69 @@ export const HOME_URL = `${SITE.url}/`
 
 /* ─────────  MOOD AGENCY · división de eventos (mundo id 'control')  ─────── */
 
+/* ─────────────────────────────  ARTISTAS  ──────────────────────────────── */
+
+/**
+ * Un artista del roster de Mood Agency.
+ *
+ * ⚠ DE ESTOS CUATRO SÓLO SE CONOCE EL NOMBRE. Nadie ha confirmado género
+ * musical, trayectoria, ciudad, años de carrera, número de shows ni redes.
+ * Por eso TODO lo demás es opcional y está vacío: es exactamente la misma
+ * regla que vació `CLIENTS` y el portfolio inventado. Un dato inventado en la
+ * web de una agencia real no es licencia creativa, es una mentira verificable.
+ *
+ * `id` y `accent` NO son datos del artista, son datos de PRESENTACIÓN: el id es
+ * la clave estable y el acento decide qué neón domina su carta. Inventarlos no
+ * engaña a nadie porque no afirman nada del mundo real.
+ *
+ * ⚠ NO HAY CAMPO DE IMAGEN, Y ES A PROPÓSITO. Las cartas no llevan foto: el
+ * "retrato" se GENERA de forma determinista a partir del nombre (ver
+ * `@/sections/Roster`). Mismo nombre, misma carta, siempre. Así no hace falta
+ * pedirle al cliente cuatro fotos con derechos antes de poder publicar, y nunca
+ * hay un hueco ni un placeholder de imagen rota.
+ */
+export interface Artist {
+  /** Slug estable. Clave de React y semilla legible del arte generativo. */
+  id: string
+  /** Nombre REAL, exactamente como lo escribió el cliente. No se retoca. */
+  name: string
+  /** Qué neón de Mood Agency domina su carta. Presentación, no biografía. */
+  accent: 'violet' | 'blue' | 'red'
+
+  /* ── TODO LO DE ABAJO ESTÁ PENDIENTE DEL CLIENTE ─────────────────────────
+     Mientras siga `undefined` la web no dice nada de ese campo: no hay texto
+     de relleno, no hay "próximamente" y no hay enlace muerto. En cuanto uno se
+     rellene aparece solo en la carta y en su detalle, sin tocar un `.tsx`. */
+
+  /** Una línea de qué hace. Ej. formato de sesión o rol. PREGUNTAR AL CLIENTE. */
+  role?: string
+  /** Dos o tres frases. PREGUNTAR AL CLIENTE. */
+  bio?: string
+  /** Perfiles REALES y verificados. Un `href="#"` acá es humo. PREGUNTAR AL CLIENTE. */
+  links?: readonly { label: string; href: string }[]
+}
+
+/**
+ * ROSTER REAL — FUENTE ÚNICA de los artistas de Mood Agency.
+ *
+ * De acá salen las DOS cosas que los muestran, y por eso añadir un artista es
+ * tocar un solo sitio:
+ *   1. el carrusel del capítulo `gallery` (`@/sections/Roster`);
+ *   2. la lista `roster` del servicio "DJs & Booking", derivada más abajo con
+ *      `ARTISTS.map(...)`. NO se escribe a mano: dos listas paralelas divergen
+ *      el día que alguien añade un artista con prisa.
+ *
+ * El reparto de acentos es deliberado: cuatro cartas del mismo violeta se leen
+ * como una sola mancha. Se repite violeta en la cuarta porque la paleta de Mood
+ * Agency tiene tres neones, no cuatro.
+ */
+export const ARTISTS: readonly Artist[] = [
+  { id: 'morales', name: 'DJ Morales', accent: 'violet' },
+  { id: 'fati-coronas', name: 'DJ Fati Coronas', accent: 'blue' },
+  { id: 'malbie-richa', name: 'Malbie + Richa', accent: 'red' },
+  { id: 'rock-bikes', name: 'Rock & Bikes', accent: 'violet' },
+]
+
 /**
  * Un servicio de la división de eventos.
  *
@@ -150,9 +213,11 @@ const EVENT_SERVICES: readonly EventService[] = [
     n: '02',
     title: 'DJs & Booking',
     desc: 'Line-ups curados. Artistas que entienden el sitio y la hora.',
-    /* Roster REAL, dato del cliente. Si entra o sale un artista se toca esta
-       lista y nada más: `ControlServices` la pinta sola. */
-    roster: ['DJ Morales', 'DJ Fati Coronas', 'Malbie + Richa', 'Rock & Bikes'],
+    /* DERIVADO de `ARTISTS`, nunca escrito a mano. Los mismos cuatro nombres se
+       muestran en dos sitios —acá y en las cartas del capítulo `gallery`— y dos
+       listas paralelas divergen el día que alguien añade un artista con prisa.
+       Añadir o quitar un artista es tocar `ARTISTS` y sólo `ARTISTS`. */
+    roster: ARTISTS.map((a) => a.name),
   },
   { n: '03', title: 'Festivales', desc: 'Multi-escenario, logística, permisos y operación integral.' },
   { n: '04', title: 'Producción audiovisual', desc: 'Aftermovies, contenido en vivo y visuales generativos.' },
@@ -162,61 +227,6 @@ const EVENT_SERVICES: readonly EventService[] = [
   { n: '08', title: 'Branding para eventos', desc: 'Identidad que funciona en un cartel y en una pulsera.' },
   { n: '09', title: 'Experiencias inmersivas', desc: 'Mapping, interacción y espacios que responden.' },
 ]
-
-/** Un proyecto del portfolio. Ver `GALLERY` para saber cómo se rellena. */
-export interface GalleryProject {
-  /** Id estable. Es también la carpeta de fotos: `public/gallery/<id>/`. */
-  id: string
-  title: string
-  /** Línea de contexto corta: tipo de proyecto y un rasgo que lo sitúe. */
-  meta: string
-  year: string
-  client: string
-  location: string
-  /** Qué hicimos NOSOTROS, no qué se hizo. */
-  role: readonly string[]
-  description: string
-  stats: readonly { label: string; value: string }[]
-  /** Rutas a `public/gallery/<id>/NN.jpg`. Hay placeholder por cada imagen que falte. */
-  images: readonly string[]
-  /** Qué neón de la división domina la tarjeta. Es DATO: el componente lo traduce a token. */
-  accent: 'violet' | 'blue' | 'red'
-}
-
-/**
- * PORTFOLIO — VACÍO A PROPÓSITO.
- *
- * Acá había ocho proyectos (`Nocturna`, `Blackroom`, `Solstice`, `Reactor`,
- * `Pulse`, `Neón Sur`, `Vórtice`, `Cierre`) con clientes, ubicaciones y métricas
- * —"12.000 asistentes", "96% de ocupación", "1,4 M de reproducciones"— que NO
- * existieron nunca: los generó una IA para maquetar. Publicar eso en la web de
- * una agencia real no es licencia creativa, es una mentira verificable.
- *
- * ── CÓMO SE RELLENA ─────────────────────────────────────────────────────────
- *
- * 1. Un objeto `GalleryProject` por proyecto REAL. El campo que no puedas
- *    confirmar con el cliente NO se rellena a ojo: se pregunta.
- * 2. `stats` admite `[]` sin romper nada, y es justo donde más tienta inventar.
- *    Sin cifra confirmada, array vacío.
- * 3. Subí las fotos a `public/gallery/<id>/01.jpg`, `02.jpg`… Mientras no estén,
- *    cada imagen cae a un placeholder por su cuenta: se puede publicar un
- *    proyecto y añadirle las fotos después. Ver `public/gallery/README.md`.
- * 4. Con el array vacío, `Gallery` NO monta el carrusel: pinta un estado vacío y
- *    CONSERVA su altura de capítulo. Eso último no es cosmético — la coreografía
- *    3D está atada al scroll y el capítulo tiene que seguir midiendo sus 2
- *    viewports o se descoloca todo lo que viene detrás.
- *
- * ⚠ MÍNIMO DE PROYECTOS PARA EL CARRUSEL: 5, y 8 para estar tranquilo.
- *
- * El carrusel es un anillo infinito por aritmética modular, no por clonado: sólo
- * existe UN nodo por proyecto. Eso obliga a que una vuelta entera mida más que
- * el viewport, o una misma tarjeta tendría que verse por los dos bordes a la vez.
- * A 24rem de tarjeta + 2rem de hueco son ~416px por proyecto: 5 cubren 2080px
- * (pantalla normal) y 8 cubren 3328px, que es el límite que asume `Gallery.tsx`.
- * Con 2 o 3 proyectos aparece una costura en los extremos. Si el cliente sólo
- * aporta tres, se cambia el carrusel por una retícula; no se publica torcido.
- */
-export const GALLERY: readonly GalleryProject[] = []
 
 export const EVENTS = {
   /** ⚠ Id TÉCNICO del mundo, no la marca. Ver la cabecera del archivo. */
@@ -234,42 +244,50 @@ export const EVENTS = {
     /** Encabeza los artistas dentro del servicio de booking. */
     rosterLabel: 'Roster',
   },
-  gallery: GALLERY,
+  artists: ARTISTS,
   /**
-   * Copy de la UI de la galería (carrusel, ficha de proyecto y estado vacío).
+   * Copy de las CARTAS COLECCIONABLES del capítulo `gallery`.
+   *
    * Vive acá por la misma regla que el resto: en los `.tsx` no se escribe ni una
-   * palabra, y las etiquetas de accesibilidad son texto de cara al usuario
-   * tanto como un titular.
+   * palabra, y las etiquetas de accesibilidad son texto de cara al usuario tanto
+   * como un titular.
+   *
+   * ⚠ Ni una sola clave de acá afirma nada sobre un artista concreto. Todo lo
+   * que es específico de una persona sale de `ARTISTS`, y hoy está vacío.
    */
-  galleryUI: {
-    cta: 'Ver proyecto',
-    hint: 'Arrastrá para explorar · Clic para ver la ficha',
-    prev: 'Proyecto anterior',
-    next: 'Proyecto siguiente',
-    goTo: 'Ir al proyecto',
-    close: 'Cerrar la ficha del proyecto',
+  artistsUI: {
+    /** Encabezado de sección. Palabras reales, no un claim. */
+    title: 'Los artistas con los que trabajamos',
+    /** Etiqueta pequeña sobre el título. */
+    kicker: 'Roster',
+    /** Se ve bajo el título. Explica la mecánica, no vende humo. */
+    hint: 'Pasá el puntero por encima · Pulsá una carta para verla en grande',
+    /** `aria-label` del grupo de cartas. Un grupo sin nombre no es un grupo. */
+    groupLabel: 'Cartas de los artistas de Mood Agency',
+    /** Prefijo del `aria-label` de cada carta. Se compone con el nombre. */
+    open: 'Ver la carta de',
+    close: 'Cerrar la carta',
+    /** Palabra que precede al número de carta: "Carta 01 / 04". */
+    cardLabel: 'Carta',
+    /** Glifo del cursor magnético sobre una carta. Dos palabras como mucho. */
+    cardCta: 'Ver carta',
     sep: ' · ',
+    /** Encabezados del detalle. Sólo se pintan si el campo tiene valor. */
     fields: {
-      year: 'Año',
-      client: 'Cliente',
-      location: 'Dónde',
-      role: 'Qué hicimos',
+      role: 'Qué hace',
+      about: 'Sobre el artista',
+      links: 'Dónde escucharlo',
     },
-    aboutLabel: 'El proyecto',
-    statsLabel: 'En números',
-    imagesLabel: 'Galería',
-    imageAlt: 'Imagen del proyecto',
-    prevImage: 'Imagen anterior',
-    nextImage: 'Imagen siguiente',
-    goToImage: 'Ir a la imagen',
-    /** Se muestra sobre el placeholder cuando la foto todavía no está subida. */
-    pending: 'Imagen en producción',
-    liveLabel: 'Proyecto en pantalla',
-    /** Lo que se ve mientras `GALLERY` esté vacío. Desaparece solo con el primer proyecto. */
-    empty: {
-      title: 'Portfolio en preparación',
-      body: 'Estamos montando la selección de proyectos. Si querés ver trabajo nuestro antes, escribinos y te lo enseñamos.',
-      cta: 'Escribinos',
+    /**
+     * CIERRE DEL DETALLE. Es lo que sostiene la ficha mientras `role`, `bio` y
+     * `links` sigan vacíos: en vez de un "próximamente" de relleno, una salida
+     * real al formulario. No afirma nada del artista, que es justo el punto.
+     */
+    booking: {
+      body: '¿Querés fechas, formato de sesión o el rider técnico? Escribinos y te lo pasamos.',
+      cta: 'Consultar disponibilidad',
+      /** Ancla al capítulo del formulario. Existe: es `chapter-converge`. */
+      href: '#chapter-converge',
     },
   },
 } as const
