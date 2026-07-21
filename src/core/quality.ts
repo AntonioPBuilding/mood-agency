@@ -34,7 +34,20 @@ export interface QualityBudget {
   postFx: boolean
   /** ¿Sombras en tiempo real? */
   shadows: boolean
-  /** Muestras de la niebla volumétrica de Mood Agency. */
+  /**
+   * Planos de humo de la división de eventos.
+   *
+   * ⚠ ES EL NÚMERO MÁS CARO DEL ARCHIVO, y no lo parece.
+   *
+   * Cada "paso" es un plano grande, semitransparente y con blending aditivo. No
+   * cuesta por polígono: cuesta por OVERDRAW. Con 20 planos, cada píxel que
+   * cubren se escribe veinte veces —encima de los conos de laser y de las
+   * partículas, que también son aditivos— y como todos van con
+   * `depthWrite: false` el GPU no puede descartar NADA: pinta hasta lo tapado.
+   *
+   * El humo es difuso por definición: la diferencia entre 8 capas y 20 no se
+   * ve, y el coste se divide por dos y medio.
+   */
   volumetricSteps: number
   /** El usuario pidió menos movimiento: la historia se cuenta igual, quieta. */
   reduced: boolean
@@ -66,9 +79,17 @@ function detectTier(): Tier {
  * Con cinco efectos a pantalla completa encima, 2,3M ya es exigente.
  */
 const PIXEL_BUDGET: Record<Tier, number> = {
-  low: 1_100_000,
-  mid: 1_800_000,
-  high: 2_400_000,
+  /* Recortado ~22% en los tres escalones (era 1,1M / 1,8M / 2,4M).
+   *
+   * Es la palanca con más recorrido que queda: TODAS las pasadas de
+   * post-proceso cuestan por píxel, así que un 22% menos de fragmentos es un
+   * 22% menos en bloom, tone mapping, viñeta, grano Y en el propio dibujado de
+   * la escena. Se paga en nitidez del canvas —que es un fondo de partículas y
+   * glow difuso detrás de un scrim, donde nadie percibe el detalle que no
+   * calculamos—. La tipografía es DOM y no se toca: sigue nítida siempre. */
+  low: 900_000,
+  mid: 1_400_000,
+  high: 1_900_000,
 }
 
 /** Suelo de nitidez. Por debajo de esto la tipografía del canvas se empasta. */
@@ -116,7 +137,7 @@ const BUDGETS: Record<Tier, Omit<QualityBudget, 'tier' | 'reduced' | 'dpr'>> = {
     sphereDetail: 128,
     postFx: true,
     shadows: false,
-    volumetricSteps: 12,
+    volumetricSteps: 5,
   },
   high: {
     // 45k, no 120k. Más partículas no es más impacto: pasado cierto umbral el
@@ -126,7 +147,7 @@ const BUDGETS: Record<Tier, Omit<QualityBudget, 'tier' | 'reduced' | 'dpr'>> = {
     sphereDetail: 192,
     postFx: true,
     shadows: false,
-    volumetricSteps: 20,
+    volumetricSteps: 8,
   },
 }
 

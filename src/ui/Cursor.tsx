@@ -393,10 +393,20 @@ export function Cursor(): React.JSX.Element {
           style={{
             filter:
               world === 'control' ? 'drop-shadow(0 0 26px var(--world-accent))' : 'none',
-            // Sobre fondos casi negros `difference` se comporta como identidad,
-            // así que el estado base conserva el color del mundo Y se invierte
-            // cuando pasa por encima de tipografía clara.
-            mixBlendMode: mode === 'default' ? 'difference' : 'normal',
+            /* `difference` SÍ, pero NUNCA en el mundo de eventos.
+​
+               Sobre fondos casi negros `difference` se comporta como identidad:
+               el cursor conserva el color del mundo y además se invierte al
+               pasar sobre tipografía clara. Perfecto en VOID y en Mood Creative.
+​
+               En Mood Agency se cae a pedazos, y por matemática, no por gusto:
+               el acento es violeta Y el fondo es violeta con bloom, así que la
+               diferencia entre los dos da casi negro. El cursor se anula contra
+               su propio fondo justo en el capítulo con más luz de la landing.
+               Ahí el blend se apaga y el trazo pasa a tinta (abajo). El glow
+               violeta lo sigue poniendo el `drop-shadow`, así que la textura de
+               slime no se pierde: lo único que cambia es que se VE. */
+            mixBlendMode: mode === 'default' && world !== 'control' ? 'difference' : 'normal',
           }}
         >
           <svg
@@ -418,8 +428,19 @@ export function Cursor(): React.JSX.Element {
               rx={BASE / 2}
               ry={BASE / 2}
               fill={filled ? 'var(--world-accent)' : 'transparent'}
-              stroke={isText ? 'none' : 'var(--world-accent)'}
-              strokeWidth={1.5}
+              /* Tinta en el mundo de eventos, acento en los demás. Sin el blend
+                 de `difference`, un trazo violeta sobre neón violeta seguiría
+                 sin leerse: hace falta un color que CONTRASTE con el fondo, no
+                 uno que pertenezca a él. */
+              stroke={
+                isText
+                  ? 'none'
+                  : world === 'control'
+                    ? 'var(--world-ink)'
+                    : 'var(--world-accent)'
+              }
+              // Y algo más gordo donde hay bloom: 1,5px se los come el glow.
+              strokeWidth={world === 'control' ? 2.25 : 1.5}
               // La clave de todo: el trazo se mide en píxeles de PANTALLA,
               // ignorando la matriz de transformación. 1,5px a cualquier escala.
               vectorEffect="non-scaling-stroke"
@@ -430,6 +451,33 @@ export function Cursor(): React.JSX.Element {
             />
           </svg>
         </div>
+
+        {/* NÚCLEO SÓLIDO. Fuera de la capa que mezcla, a propósito.
+​
+            El blob va en `mix-blend-mode: difference` con el acento del mundo.
+            En la división de eventos ese acento es violeta Y el fondo es violeta
+            bloomeado, así que la diferencia da casi negro: el cursor se anula
+            contra su propio fondo justo donde más luz hay. Matemáticamente
+            correcto, visualmente invisible.
+​
+            Este punto NO se mezcla con nada y lleva un halo oscuro pegado, o sea
+            que contrasta contra fondo claro Y contra fondo oscuro. Es el mismo
+            principio que `.on-scene` en la tipografía: no más brillo,
+            SEPARACIÓN.
+​
+            Va aparte del SVG para no heredar sus escalas: el blob crece hasta
+            112px en modo `cta` y el núcleo tiene que seguir siendo un punto. */}
+        <span
+          aria-hidden="true"
+          className="absolute left-0 top-0 block rounded-full"
+          style={{
+            width: 5,
+            height: 5,
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'var(--world-ink)',
+            boxShadow: '0 0 0 1.5px rgb(0 0 0 / 0.85), 0 0 6px rgb(0 0 0 / 0.6)',
+          }}
+        />
 
         {/* Etiqueta y glifo: capa aparte, del tamaño del blob más grande, para
             que el texto NO herede la escala del círculo. Escalar tipografía

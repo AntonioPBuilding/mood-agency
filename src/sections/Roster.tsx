@@ -78,7 +78,7 @@ import {
  * 3. Con `reduced` no hay sobre. Las cuatro cartas están puestas desde el primer
  *    frame. Una animación no puede ser el peaje para leer un roster.
  *
- * El sobre se abre UNA vez por sesión (`sessionStorage`), y hay un botón discreto
+ * El sobre arranca CERRADO en cada carga de la página, y hay un botón discreto
  * para repetirlo: la gente quiere verlo dos veces, y negárselo es peor que
  * ofrecerlo.
  *
@@ -671,7 +671,7 @@ function ArtistDialog({ artist, index, onClose }: ArtistDialogProps): React.JSX.
               moviéndose al lado del texto es ruido. Mantiene las tres láminas
               para que sea reconociblemente la misma carta que se pulsó. */}
           <div
-            className="relative mx-auto w-full max-w-[20rem] overflow-hidden"
+            className="isolate relative mx-auto w-full max-w-[20rem] overflow-hidden"
             style={{ aspectRatio: '5 / 7', border: `1px solid ${alpha(accent, 38)}` }}
           >
             <Artwork art={art} holoOpacity={0.42} photo={photoFor(artist)} />
@@ -808,35 +808,20 @@ function ArtistDialog({ artist, index, onClose }: ArtistDialogProps): React.JSX.
 type PackPhase = 'sealed' | 'opening' | 'open'
 
 /**
- * UNA VEZ POR SESIÓN, y en `sessionStorage` y no en una variable de módulo.
+ * EL SOBRE ARRANCA CERRADO EN CADA CARGA. Decisión de producto del cliente.
  *
- * Una variable de módulo se pierde al recargar, y recargar es exactamente lo que
- * hace alguien que vuelve a la landing desde otra pestaña: se comería la
- * animación otra vez sin haberla pedido. `sessionStorage` dura lo que dura la
- * pestaña, que es la definición literal de "sesión".
+ * Antes se recordaba en `sessionStorage` para no repetir la animación a quien
+ * volvía desde otra pestaña. Se quitó a propósito: abrir el sobre ES el momento
+ * de la sección, y llegar a un sobre ya abierto es llegar tarde a tu propia
+ * fiesta. Recargar es barato; la primera impresión no se repite.
  *
- * Las dos funciones van envueltas porque en modo privado de Safari y con cookies
- * de terceros bloqueadas el simple ACCESO a `sessionStorage` lanza. Que el
- * roster no se pinte por una política de almacenamiento sería absurdo: si falla,
- * el sobre se comporta como si fuera la primera visita.
+ * El estado vive dentro del componente y muere con la página, que es justo lo
+ * que se busca. No hay almacenamiento de por medio: cero permisos, cero
+ * `try/catch` por políticas de cookies, cero estado que se pueda corromper.
+ *
+ * (Sigue existiendo el botón "abrir otra vez" para repetirla sin recargar, y
+ * `reduced` sigue saltándose la animación entera.)
  */
-const PACK_KEY = 'mood:roster-pack'
-
-function packAlreadyOpened(): boolean {
-  try {
-    return window.sessionStorage.getItem(PACK_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-function rememberPackOpened(): void {
-  try {
-    window.sessionStorage.setItem(PACK_KEY, '1')
-  } catch {
-    // Almacenamiento bloqueado. Se pierde el "una vez por sesión" y nada más.
-  }
-}
 
 /**
  * Retardo del respaldo automático. Dos segundos y pico: suficiente para que
@@ -908,7 +893,9 @@ function Pack({ packRef, flashRef, burstRef, onOpen }: PackProps): React.JSX.Ele
         // en un móvil apaisado se recorta igual que ellas en vez de desbordar el
         // capítulo, que es `overflow-hidden`. A 375px mide 240×336: muy por
         // encima de los 44px de área táctil mínima.
-        className="gpu pointer-events-auto relative block aspect-[5/7] max-h-[54svh] w-[64vw] max-w-[15rem] overflow-hidden outline-offset-4"
+        /* Mismo motivo que en las cartas: sin `isolate`, las tres láminas del
+           sobre se mezclan contra la escena 3D en cada frame. */
+        className="gpu isolate pointer-events-auto relative block aspect-[5/7] max-h-[54svh] w-[64vw] max-w-[15rem] overflow-hidden outline-offset-4"
         style={{
           backgroundColor: CONTROL_BG,
           border: `1px solid ${alpha(CONTROL_VIOLET, 62)}`,
@@ -1079,9 +1066,9 @@ export function Roster(): React.JSX.Element {
    * No es que la animación se salte: es que nunca llega a existir, y las cuatro
    * cartas están puestas desde el primer frame.
    */
-  const [phase, setPhase] = useState<PackPhase>(() =>
-    reduced || packAlreadyOpened() ? 'open' : 'sealed',
-  )
+  // Cerrado SIEMPRE al cargar. La única excepción sigue siendo `reduced`: ahí no
+  // puede haber información escondida detrás de una animación.
+  const [phase, setPhase] = useState<PackPhase>(() => (reduced ? 'open' : 'sealed'))
 
   /**
    * Espejo síncrono de `phase`. Los disparadores del sobre llegan desde un
@@ -1101,7 +1088,6 @@ export function Roster(): React.JSX.Element {
     const next: PackPhase = instant ? 'open' : 'opening'
     phaseRef.current = next
     focusOnOpen.current = focusFirst
-    rememberPackOpened()
     setPhase(next)
   }, [])
 
@@ -1632,7 +1618,17 @@ export function Roster(): React.JSX.Element {
                 // pero en un móvil apaisado —donde el alto se desploma— recorta
                 // la proporción en vez de dejar que la carta desborde el
                 // capítulo, que es `overflow-hidden` y la cortaría en seco.
-                className="group gpu relative block aspect-[5/7] max-h-[54svh] w-[68vw] max-w-[16rem] overflow-hidden text-left outline-offset-4 sm:w-[14rem] lg:w-[13rem] xl:w-[16rem]"
+                /* `isolate` NO es cosmético: es LA optimización de esta sección.
+           Sin él, `mix-blend-mode` mezcla contra TODO lo que hay detrás —y
+           detrás hay un canvas WebGL repintándose 60 veces por segundo—, así
+           que el compositor no puede cachear nada y rehace la mezcla de cada
+           lámina en cada frame. Con cuatro cartas son ocho láminas mezclándose
+           contra la escena viva: eso es el tirón.
+           `isolation: isolate` encierra la mezcla dentro de la carta, que es
+           además lo que el diseño quería (dodge sobre el negro de la carta, no
+           sobre las partículas). Cada carta pasa a ser una capa autónoma que el
+           navegador compone una vez y reutiliza. */
+        className="group gpu isolate relative block aspect-[5/7] max-h-[54svh] w-[68vw] max-w-[16rem] overflow-hidden text-left outline-offset-4 sm:w-[14rem] lg:w-[13rem] xl:w-[16rem]"
                 style={{
                   // OPACA. El Núcleo 3D vive detrás de todo el DOM: con fondo
                   // translúcido las partículas se leen A TRAVÉS de la carta y no

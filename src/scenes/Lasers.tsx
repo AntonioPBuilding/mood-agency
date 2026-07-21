@@ -49,9 +49,15 @@ const tmpColor = new Color()
 function beamCount(tier: 'low' | 'mid' | 'high'): number {
   // No sale de un presupuesto propio porque los haces no son geometría pesada
   // (un cono de 10 lados) sino overdraw aditivo: lo que se paga son píxeles.
-  if (tier === 'low') return 4
-  if (tier === 'mid') return 8
-  return 12
+  //
+  // Recortado de 4/8/12 a 3/5/7. Doce conos aditivos cruzándose sobre 45.000
+  // partículas y ocho planos de humo saturan el fill rate justo en el capítulo
+  // más cargado de la landing. A partir de siete, cada haz nuevo aporta menos
+  // luz visible que coste: se superponen tanto que el ojo lee "hay lasers", no
+  // "hay doce lasers".
+  if (tier === 'low') return 3
+  if (tier === 'mid') return 5
+  return 7
 }
 
 interface BeamRig {

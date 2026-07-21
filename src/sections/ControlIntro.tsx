@@ -91,7 +91,12 @@ export function ControlIntro(): React.JSX.Element {
       </header>
 
       <div data-poster className="gpu flex flex-1 items-center">
-        <h2 className="type-mega relative w-full uppercase">
+        {/* `isolate`: las dos copias fantasma van en `mix-blend-screen` y sin
+            aislar se mezclan contra el canvas 3D, que se repinta 60 veces por
+            segundo. El compositor no puede cachear el titular y lo recompone
+            entero en cada frame. Aisladas, se mezclan sólo entre ellas y con el
+            wordmark principal — que es justo el efecto buscado. */}
+        <h2 className="type-mega isolate relative w-full uppercase">
           <motion.span
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 mix-blend-screen"
