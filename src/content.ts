@@ -39,7 +39,7 @@ export const BRAND = {
   tagline: 'Creamos estados de ánimo',
   claim: ['No hacemos webs.', 'No hacemos eventos.', 'Creamos ESTADOS DE ÁNIMO.'],
   manifesto:
-    'Un mood es lo que queda cuando el evento terminó y la pantalla se apagó. Nosotros diseñamos esa huella: con luz, con sonido, con código.',
+    'Un mood es lo que queda cuando el evento ha terminado y la pantalla se ha apagado. Nosotros diseñamos esa huella: con luz, con sonido, con código.',
 } as const
 
 /**
@@ -301,7 +301,7 @@ export const EVENTS = {
     /** Etiqueta pequeña sobre el título. */
     kicker: 'Roster',
     /** Se ve bajo el título. Explica la mecánica, no vende humo. */
-    hint: 'Pasá el puntero por encima · Pulsá una carta para verla en grande',
+    hint: 'Pasa el puntero por encima · Pulsa una carta para verla en grande',
     /** `aria-label` del grupo de cartas. Un grupo sin nombre no es un grupo. */
     groupLabel: 'Cartas de los artistas de Mood Agency',
     /** Prefijo del `aria-label` de cada carta. Se compone con el nombre. */
@@ -354,7 +354,7 @@ export const EVENTS = {
      * real al formulario. No afirma nada del artista, que es justo el punto.
      */
     booking: {
-      body: '¿Querés fechas, formato de sesión o el rider técnico? Escribinos y te lo pasamos.',
+      body: '¿Quieres fechas, formato de sesión o el rider técnico? Escríbenos y te lo pasamos.',
       cta: 'Consultar disponibilidad',
       /** Ancla al capítulo del formulario. Existe: es `chapter-converge`. */
       href: '#chapter-converge',
@@ -517,7 +517,7 @@ export const CLIENTS_UI = {
 
 export const CTA = {
   title: '¿En qué mood estás?',
-  sub: 'Contanos qué querés hacer. Te respondemos con una idea, no con un formulario automático.',
+  sub: 'Cuéntanos qué quieres hacer. Te respondemos con una idea, no con un formulario automático.',
   /* ⚠ Los `id` son los TÉCNICOS ('control' = eventos, 'net' = tecnología): viajan
      dentro del lead y los consume quien recibe el formulario. No son la marca. */
   divisions: [
@@ -535,15 +535,15 @@ export const CTA = {
  */
 export const FORM = {
   fields: {
-    name: { label: 'Nombre', placeholder: 'Cómo te llamás' },
+    name: { label: 'Nombre', placeholder: 'Cómo te llamas' },
     email: { label: 'Email', placeholder: 'Dónde te escribimos' },
-    message: { label: 'Tu idea', placeholder: 'Contanos qué querés hacer' },
+    message: { label: 'Tu idea', placeholder: 'Cuéntanos qué quieres hacer' },
   },
-  divisionLegend: '¿Con qué división hablás?',
+  divisionLegend: '¿Con qué división hablas?',
   errors: {
     name: 'Necesitamos un nombre.',
     email: 'Ese email no parece válido.',
-    message: 'Contanos algo, aunque sean dos líneas.',
+    message: 'Cuéntanos algo, aunque sean dos líneas.',
   },
   sending: 'Enviando',
   success: 'Recibido. Te respondemos con una idea, no con una plantilla.',
@@ -563,11 +563,11 @@ export const FORM = {
  */
 export const SUBMIT_FEEDBACK = {
   errors: {
-    network: 'No llegamos al servidor. Mirá tu conexión y volvé a darle: no perdiste lo escrito.',
-    server: 'Se cayó de nuestro lado, no del tuyo. Probá en un minuto o escribinos directo al email.',
-    rejected: 'El envío no se aceptó. Revisá el email y volvé a intentarlo.',
-    timeout: 'Está tardando demasiado. Volvé a darle y, si sigue igual, escribinos al email.',
-    aborted: 'Se canceló el envío. Cuando quieras, le damos de nuevo.',
+    network: 'No llegamos al servidor. Mira tu conexión y vuelve a darle: no has perdido lo escrito.',
+    server: 'Ha fallado de nuestro lado, no del tuyo. Prueba en un minuto o escríbenos directo al email.',
+    rejected: 'El envío no se aceptó. Revisa el email y vuelve a intentarlo.',
+    timeout: 'Está tardando demasiado. Vuelve a darle y, si sigue igual, escríbenos al email.',
+    aborted: 'Se ha cancelado el envío. Cuando quieras, lo intentamos de nuevo.',
   },
 } as const
 
@@ -587,7 +587,7 @@ export const CONTACT_PANEL = {
   /** Etiqueta técnica de la cabecera del panel. Es mundo `net`: mono y seco. */
   kicker: 'Briefing',
   /** Encabeza la alternativa al formulario. */
-  emailLabel: 'Escribinos directo',
+  emailLabel: 'Escríbenos directo',
   /** Encabeza la procedencia. Dato, no promesa. */
   locationLabel: 'Base',
   /** Compuesto desde `SITE`: municipio + provincia. Nada más. */
@@ -598,7 +598,7 @@ export const CONTACT_PANEL = {
 
 /** Las dos líneas del blackout: el corte narrativo entre las dos divisiones. */
 export const BLACKOUT = {
-  lines: ['El show terminó.', 'Encendé las luces.'],
+  lines: ['Se acabó el show.', 'Enciende las luces.'],
 } as const
 
 export const FOOTER = {

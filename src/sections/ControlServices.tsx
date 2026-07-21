@@ -114,8 +114,26 @@ export function ControlServices(): React.JSX.Element {
          haciendo su trabajo. Con la escala vieja el titular se comía media
          pantalla y el aire (18vh de padding + 8vh de hueco) se comía la otra
          media. El titular ya encogió en `index.css`; acá se recupera el resto
-         apretando ese aire, que era decorativo, no estructural. */
-      innerClassName="justify-center gap-[4vh] px-5 py-[8vh] md:gap-[6vh] md:px-10 md:py-[12vh]"
+         apretando ese aire, que era decorativo, no estructural.
+
+         EN MÓVIL EL AIRE APRIETA MÁS, y no por gusto: medido a 375×553 —el
+         viewport con la barra de direcciones desplegada— la sección ocupaba
+         1500px contra un presupuesto de 2.5 × 553 = 1383px. Se pasaba 117px.
+
+         Que se pase NO parte el layout: la sección es `chapter-flow`, o sea
+         `min-height`, y crece. Lo que rompe es más sutil y peor de depurar: el
+         capítulo declara `vh: 2.5` en `core/chapters.ts` y ese número es el que
+         usa la escena 3D para saber dónde empieza y acaba su tramo del timeline.
+         Cada píxel que la sección crece por encima de su presupuesto empuja
+         TODO el documento de aquí abajo y desincroniza la coreografía, que es
+         scroll-linked. El presupuesto no es una sugerencia de diseño: es el
+         contrato con el Núcleo.
+
+         `vh` (no `svh`) a propósito en el padding: es aire, no estructura. Si la
+         barra se retrae, el aire crece un 12% y no pasa nada. Lo que NO puede
+         moverse es el alto del documento, y de eso se ocupa `chapter-flow` con
+         `svh` — el porqué completo está en `index.css`. */
+      innerClassName="justify-center gap-[3vh] px-5 py-[5vh] md:gap-[6vh] md:px-10 md:py-[12vh]"
     >
       {/* ENCABEZADO EN DOS PISOS, y el de arriba no es decoración.
           "Hacemos que la sala se caiga" es un claim de agencia: le habla al
@@ -124,11 +142,30 @@ export function ControlServices(): React.JSX.Element {
           eventos", "DJs", "festivales") DENTRO del `<h2>`, a la vista, en la
           misma voz mono que ya usan los índices de fila. Nada de texto oculto:
           si merece indexarse, merece leerse. */}
-      <h2 className="flex flex-col gap-3 md:gap-4">
-        <span className="type-label" style={{ color: CONTROL_VIOLET }}>
+      <h2 className="flex flex-col gap-2 md:gap-4">
+        {/* `on-scene`: violeta de 11px sobre un campo de partículas violetas es
+            el peor caso posible de figura contra fondo. El halo del color del
+            mundo le abre un hueco alrededor y lo separa.
+            Es UN elemento, no una barrida: el cliente ya rechazó una vez que se
+            tocara la tipografía de toda la landing, y tenía razón. Aquí se
+            aplica porque este overline concreto no se lee. */}
+        <span className="type-label on-scene" style={{ color: CONTROL_VIOLET }}>
           {EVENTS.servicesHeading}
         </span>
-        <span className="type-giga block max-w-[14ch] uppercase">{EVENTS.claim}</span>
+        {/* MEDIDA DE LÍNEA POR TAMAÑO, no una sola para los dos.
+            `14ch` está calibrado contra el escritorio, donde el claim cae en
+            tres líneas de 75px. En móvil el `ch` encoge con la tipografía, pero
+            el claim tiene las mismas palabras y el viewport no da 335px de sobra
+            para desperdiciarlos: 14ch son ~250px, así que el titular se quedaba
+            85px MÁS ESTRECHO de lo que había disponible y se partía igualmente
+            en tres líneas de 36px, con dos huecos de sangrado por el lado
+            derecho. 18ch usa el ancho que ya existe y lo deja en dos líneas
+            llenas: −32px de altura y, sobre todo, un titular que se lee como un
+            cartel en vez de como una columna estrecha. Medido: el `<h2>` pasa de
+            140px a 104px a 375px de ancho. El escritorio no se entera. */}
+        <span className="type-giga block max-w-[18ch] uppercase md:max-w-[14ch]">
+          {EVENTS.claim}
+        </span>
       </h2>
 
       {/* La `<ul>` cierra con `border-b`: nueve reglas y ninguna abajo dejaba la
@@ -141,16 +178,34 @@ export function ControlServices(): React.JSX.Element {
               data-cursor="hover"
               /* RITMO DE LA FILA.
                  El índice ya no vive en una columna sobredimensionada: con el
-                 número a 0.6× del título, 2.75rem (móvil) y 4.5rem (escritorio)
-                 son justo lo que ocupan dos dígitos más su regla, así que el
-                 título arranca pegado al número en vez de flotar tras un hueco.
+                 número a 0.6× del título, 4.5rem en escritorio es justo lo que
+                 ocupan dos dígitos más su regla, así que el título arranca
+                 pegado al número en vez de flotar tras un hueco.
                  La descripción cae bajo el título (`col-start-2`), nunca bajo el
                  número: número y espina de texto forman dos ejes verticales
                  limpios de arriba abajo, que es lo que hace que nueve filas se
                  lean como un line-up y no como una lista de la compra.
-                 El `py` sube porque hay presupuesto de sobra: la sección mide
-                 2.5 viewports y el contenido no llega a 1.5. */
-              className="group relative grid grid-cols-[2.75rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1.5 py-4 md:grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,18rem)] md:gap-x-8 md:py-5"
+
+                 EN MÓVIL LA COLUMNA ESTABA MAL MEDIDA, y el error se veía. El
+                 título sigue a `--text-huge`, que por debajo de 889px de ancho
+                 está clavado en su mínimo (28px), así que el índice mide 16.8px
+                 FIJOS en todo el rango móvil y sus dos dígitos mono ocupan
+                 ~20px. La columna eran 2.75rem = 44px: 24px de hueco muerto que
+                 no separaba nada, sólo despegaba el título del número al que
+                 pertenece y le robaba ancho al texto. Ahora son 1.75rem = 28px,
+                 medidos contra la tinta real, con los mismos 20px de la regla
+                 `w-[1.2em]` de debajo. Con el `gap` bajado a 2.5 el título gana
+                 18px de ancho, que a 375px es un 6% de medida de línea: eso es
+                 lo que decide si un título cabe en una línea o parte en dos.
+
+                 El `py` va al revés en cada tamaño y por motivos distintos. En
+                 escritorio SUBE porque sobra presupuesto. En móvil BAJA a 3
+                 (12px) porque no sobra nada, y se puede: la zona pulsable más
+                 pequeña de las nueve filas mide 76px, muy por encima de los
+                 44px de mínimo táctil, así que apretar el aire vertical no toca
+                 la accesibilidad — sólo la densidad, que es justo lo que había
+                 que arreglar. */
+              className="group relative grid grid-cols-[1.75rem_minmax(0,1fr)] items-baseline gap-x-2.5 gap-y-1 py-3 md:grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,18rem)] md:gap-x-8 md:gap-y-1.5 md:py-5"
             >
               {/* Halo de la fila: opacidad, nunca un cambio de fondo por frame. */}
               <span
@@ -235,9 +290,28 @@ export function ControlServices(): React.JSX.Element {
               {/* DESCRIPCIÓN — siempre presente, en los dos tamaños.
                   El hover ya no la enciende de la nada: la sube de 80% a 100% de
                   opacidad. Sigue siendo `opacity`, que es compositable, y el
-                  contenido existe para el táctil, el teclado y el rastreador. */}
+                  contenido existe para el táctil, el teclado y el rastreador.
+
+                  PERO EL 80% DE REPOSO ES SÓLO DE ESCRITORIO, y esto no es
+                  cosmética. Ese 80% se multiplica con el 78% de tinta del
+                  `color`: el texto en reposo se lee al ~62% del ink sobre el
+                  fondo de Control. En escritorio eso es una atenuación
+                  DELIBERADA y reversible — pasas el puntero y sube al 78% real,
+                  o sea el reposo es un estado del que se puede salir. En táctil
+                  no hay puntero: `group-hover` no se dispara nunca, así que ese
+                  62% dejaba de ser un estado de reposo y pasaba a ser el ÚNICO
+                  estado. Atenuar permanentemente el texto que explica cada
+                  servicio, y encima a 14px, es exactamente el problema que se
+                  arregló al sacar la descripción del hover, colado otra vez por
+                  la puerta de atrás. En móvil va al 100% y punto.
+
+                  El interlineado baja de `relaxed` (1.625) a `normal` (1.5) sólo
+                  en móvil: sobre 14px son 1.75px por línea × ~16 líneas de
+                  descripción en la sección. Es de los recortes más baratos que
+                  hay —1.5 sigue siendo interlineado de lectura cómoda para dos
+                  líneas de texto— y en escritorio no se toca nada. */}
               <span
-                className="relative col-start-2 max-w-[42ch] text-sm leading-relaxed opacity-80 transition-opacity duration-500 group-hover:opacity-100 group-focus-visible:opacity-100 md:col-start-3 md:self-center"
+                className="relative col-start-2 max-w-[42ch] text-sm leading-normal transition-opacity duration-500 group-focus-visible:opacity-100 md:col-start-3 md:self-center md:leading-relaxed md:opacity-80 md:group-hover:opacity-100"
                 style={{ color: alpha(INK, 78), transitionTimingFunction: EASE_OUT_EXPO }}
               >
                 {service.desc}
@@ -255,17 +329,36 @@ export function ControlServices(): React.JSX.Element {
                      lector de pantalla anuncia "lista de 4 elementos" y cada
                      artista se lee como una entidad, que es lo que es. Una
                      `<ul>` dentro de un `<a>` es HTML válido mientras no meta
-                     nada interactivo dentro, y no lo hace. */}
+                     nada interactivo dentro, y no lo hace.
+                  3. `col-span-2` en LOS DOS TAMAÑOS, no sólo en escritorio.
+                     Antes en móvil iba a `col-start-2`, o sea encajonado en la
+                     columna del título: cuatro fichas de hasta 15 caracteres
+                     mono con 0.22em de tracking, repartidas en 279px, dejaban la
+                     fila 02 en 268px medidos a 375px de ancho — dos veces y
+                     media una fila normal (111px). Y la razón para encajonarlo
+                     ahí no existía: la espina vertical que defiende la
+                     descripción es la del TEXTO, y estas fichas no son texto
+                     corrido — son objetos con su propia caja, su borde y su
+                     etiqueta. En escritorio ya iban a ancho completo por eso
+                     mismo; el móvil sólo estaba siendo incoherente. A ancho
+                     completo, y con la caja apretada, la fila baja a 206px y las
+                     fichas caen en dos líneas (medido).
+
+                  Las fichas aprietan padding y hueco por debajo de `md`. Es lo
+                  ÚNICO que se puede apretar sin romperlas: el cuerpo es
+                  `type-label` (11px mono con 0.22em de tracking) y ese tracking
+                  es lo que las hace anchas, pero es también lo que las hace
+                  legibles a 11px. Se recorta la caja, nunca la letra. */}
               {service.roster !== undefined && (
-                <span className="col-start-2 flex flex-wrap items-center gap-x-3 gap-y-2 pt-1 md:col-span-2">
+                <span className="col-span-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 pt-1 md:gap-x-3 md:gap-y-2">
                   <span className="type-label" style={{ color: alpha(CONTROL_VIOLET, 90) }}>
                     {EVENTS.servicesUI.rosterLabel}
                   </span>
-                  <ul className="flex flex-wrap items-center gap-2">
+                  <ul className="flex flex-wrap items-center gap-1.5 md:gap-2">
                     {service.roster.map((artist) => (
                       <li
                         key={artist}
-                        className="type-label px-2.5 py-1"
+                        className="type-label px-2 py-0.5 md:px-2.5 md:py-1"
                         style={{
                           border: `1px solid ${alpha(CONTROL_VIOLET, 32)}`,
                           color: alpha(INK, 80),

@@ -14,7 +14,6 @@ import { useWorldSync } from '@/core/useWorldSync'
 import {
   Cursor,
   Preloader,
-  ScrollHUD,
   SceneBoundary,
   SceneFallback,
   SkipLink,
@@ -359,7 +358,9 @@ export default function App() {
 
       {chapters}
 
-      <ScrollHUD />
+      {/* El HUD de scroll (capítulo, % y barra de progreso) se retiró a petición
+          del cliente. El componente sigue en `@/ui/ScrollHUD` por si vuelve:
+          basta con montarlo otra vez acá. */}
     </>
   )
 }
