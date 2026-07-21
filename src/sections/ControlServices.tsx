@@ -15,9 +15,12 @@ import { CONTROL_VIOLET, EASE_OUT_EXPO, INK, alpha } from './_tokens'
  * responde al puntero tiene que responder al tabulador, y un servicio que te
  * interesa tiene un destino natural: contarnos que te interesa.
  *
- * En móvil no hay hover, así que la descripción se muestra siempre. El estado
- * "oculto" es sólo opacidad: nunca `display`, para no reflowear la lista entera
- * en cada entrada del puntero.
+ * La descripción se muestra SIEMPRE, en los dos tamaños. Antes sólo existía en
+ * `md:group-hover`, y eso tenía dos costes: la sección llegaba como nueve
+ * títulos sin contexto —parecía vacía— y, sobre todo, información de servicio
+ * que sólo vive en hover no existe para quien no puede hacer hover: táctil,
+ * teclado, o cualquier lector que no simule puntero. El hover sigue estando,
+ * pero ENRIQUECE lo que ya se lee (sube el contraste) en vez de revelarlo.
  *
  * ── PRESUPUESTO DE PINTADO ──────────────────────────────────────────────────
  *
@@ -55,6 +58,18 @@ import { CONTROL_VIOLET, EASE_OUT_EXPO, INK, alpha } from './_tokens'
  * transición, así que su radio se paga una vez y no por frame.
  */
 const NEON_GLOW = '[text-shadow:0_0_2.5rem_var(--color-control-violet)]'
+
+/**
+ * CUERPO DEL ÍNDICE DE FILA.
+ *
+ * Se deriva del MISMO token que el título (`--text-huge`) en vez de ser un
+ * tamaño suelto: así el número sigue a la escala fluida sin que nadie tenga que
+ * recordar dos clamps distintos, y la razón entre número y título —0.6— queda
+ * fija en todo el rango. Esa razón ES la jerarquía: el número acompaña al
+ * título, no compite con él, pero a 36px en escritorio ya es tipografía de
+ * cartel y no una nota al pie.
+ */
+const INDEX_SIZE = 'calc(var(--text-huge) * 0.6)'
 
 export function ControlServices(): React.JSX.Element {
   const sectionRef = useRef<HTMLElement | null>(null)
@@ -116,13 +131,26 @@ export function ControlServices(): React.JSX.Element {
         <span className="type-giga block max-w-[14ch] uppercase">{EVENTS.claim}</span>
       </h2>
 
-      <ul data-list className="flex flex-col">
+      {/* La `<ul>` cierra con `border-b`: nueve reglas y ninguna abajo dejaba la
+          lista descosida por el pie. Un cartel tiene marco inferior. */}
+      <ul data-list className="flex flex-col border-b" style={{ borderColor: alpha(INK, 12) }}>
         {EVENTS.services.map((service) => (
           <li key={service.n} data-row className="border-t" style={{ borderColor: alpha(INK, 12) }}>
             <a
               href="#chapter-converge"
               data-cursor="hover"
-              className="group relative grid grid-cols-[2.5rem_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1 py-3.5 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,20rem)] md:gap-x-8 md:py-4"
+              /* RITMO DE LA FILA.
+                 El índice ya no vive en una columna sobredimensionada: con el
+                 número a 0.6× del título, 2.75rem (móvil) y 4.5rem (escritorio)
+                 son justo lo que ocupan dos dígitos más su regla, así que el
+                 título arranca pegado al número en vez de flotar tras un hueco.
+                 La descripción cae bajo el título (`col-start-2`), nunca bajo el
+                 número: número y espina de texto forman dos ejes verticales
+                 limpios de arriba abajo, que es lo que hace que nueve filas se
+                 lean como un line-up y no como una lista de la compra.
+                 El `py` sube porque hay presupuesto de sobra: la sección mide
+                 2.5 viewports y el contenido no llega a 1.5. */
+              className="group relative grid grid-cols-[2.75rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1.5 py-4 md:grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,18rem)] md:gap-x-8 md:py-5"
             >
               {/* Halo de la fila: opacidad, nunca un cambio de fondo por frame. */}
               <span
@@ -133,28 +161,35 @@ export function ControlServices(): React.JSX.Element {
                 }}
               />
 
-              {/* ÍNDICE DE LA FILA.
-                  Contraste de escala deliberado: un mono diminuto pegado a un
-                  display enorme. Es el recurso de los créditos de cartel, y es
-                  el mismo idioma que ya hablan el contador del ScrollHUD y la
-                  cabecera de la galería — mono, versalitas, tracking abierto.
+              {/* ÍNDICE DE LA FILA — tipografía, no metadato.
+                  Iba en `type-label`: 11px con 0.22em de tracking al lado de un
+                  display de 60px. A esa escala el número no era ritmo, era una
+                  nota al pie, y en la lista de un cartel el número ES parte del
+                  compás visual. Ahora es mono a `INDEX_SIZE` (0.6× el título),
+                  semibold y al 52% de tinta: se lee de lejos y sigue estando
+                  claramente por debajo del título.
+
+                  El tracking vuelve a normal a propósito: 0.22em separaba los
+                  dos dígitos hasta romper la unidad del número. A este cuerpo el
+                  espaciado ya lo da el propio mono.
 
                   `tabular-nums` NO es cosmético: sin él el "1" mide menos que el
                   "8" y, aunque la columna del grid es fija, el número se
                   descoloca dentro de ella y los nueve índices bailan en
                   vertical de fila a fila.
 
-                  Ya no lleva `pt-2`. El grid es `items-baseline`, así que la
-                  línea base del número se calcula contra la PRIMERA línea del
-                  título: alineación óptica real, que se recalcula sola a
-                  cualquier tamaño de la escala fluida. El `pt-2` era un número
-                  mágico que la rompía empujándolo 8px por debajo.
+                  El grid es `items-baseline`, así que la línea base del número
+                  se calcula contra la PRIMERA línea del título: alineación
+                  óptica real, que se recalcula sola a cualquier tamaño de la
+                  escala fluida. `leading-none` deja la caja del número pegada al
+                  glifo, que es contra lo que se posicionan las dos capas
+                  absolutas de abajo.
 
                   `transition-colors` acá NO es para el hover: interpola el salto
                   de `--world-ink` cuando cambia el mundo activo. */}
               <span
-                className="type-label relative tabular-nums transition-colors duration-500"
-                style={{ color: alpha(INK, 32) }}
+                className="relative font-mono font-semibold leading-none tabular-nums transition-colors duration-500"
+                style={{ color: alpha(INK, 52), fontSize: INDEX_SIZE }}
               >
                 {service.n}
 
@@ -170,10 +205,15 @@ export function ControlServices(): React.JSX.Element {
 
                 {/* La regla que ancla el número a la fila. Crece desde la
                     izquierda al encender: `scaleX` es transform puro, se compone
-                    en GPU y no dispara ni un repintado. */}
+                    en GPU y no dispara ni un repintado.
+
+                    Medidas en `em`, que acá son em del NÚMERO: 1.2em es el ancho
+                    de dos dígitos mono, así que la regla calca el número a
+                    cualquier punto de la escala fluida en vez de quedarse corta
+                    (los 20px fijos de antes) al crecer el cuerpo. */}
                 <span
                   aria-hidden="true"
-                  className="absolute -bottom-1.5 left-0 block h-px w-5 origin-left scale-x-0 bg-control-violet transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:scale-x-100 group-focus-visible:scale-x-100"
+                  className="absolute -bottom-[0.28em] left-0 block h-px w-[1.2em] origin-left scale-x-0 bg-control-violet transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:scale-x-100 group-focus-visible:scale-x-100"
                 />
               </span>
 
@@ -192,9 +232,13 @@ export function ControlServices(): React.JSX.Element {
                 </span>
               </span>
 
+              {/* DESCRIPCIÓN — siempre presente, en los dos tamaños.
+                  El hover ya no la enciende de la nada: la sube de 80% a 100% de
+                  opacidad. Sigue siendo `opacity`, que es compositable, y el
+                  contenido existe para el táctil, el teclado y el rastreador. */}
               <span
-                className="relative col-span-2 max-w-[36ch] text-sm leading-relaxed transition-opacity duration-500 md:col-span-1 md:self-center md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100"
-                style={{ color: alpha(INK, 55), transitionTimingFunction: EASE_OUT_EXPO }}
+                className="relative col-start-2 max-w-[42ch] text-sm leading-relaxed opacity-80 transition-opacity duration-500 group-hover:opacity-100 group-focus-visible:opacity-100 md:col-start-3 md:self-center"
+                style={{ color: alpha(INK, 78), transitionTimingFunction: EASE_OUT_EXPO }}
               >
                 {service.desc}
               </span>
@@ -203,17 +247,17 @@ export function ControlServices(): React.JSX.Element {
                   Sólo lo lleva el servicio de booking (`roster` es opcional en
                   `EventService`). Dos decisiones deliberadas:
 
-                  1. SIEMPRE VISIBLE, nunca detrás del hover como la descripción.
-                     Estos son nombres propios que la gente busca por su cuenta:
-                     esconderlos tras un puntero los borra del móvil y del índice
-                     de Google a la vez.
+                  1. SIEMPRE VISIBLE y sin atenuar. Estos son nombres propios que
+                     la gente busca por su cuenta: esconderlos tras un puntero
+                     los borraría del móvil y del índice de Google a la vez. Es
+                     el mismo criterio que ahora aplica la descripción.
                   2. Es una `<ul>` con su etiqueta, no una frase con comas. Un
                      lector de pantalla anuncia "lista de 4 elementos" y cada
                      artista se lee como una entidad, que es lo que es. Una
                      `<ul>` dentro de un `<a>` es HTML válido mientras no meta
                      nada interactivo dentro, y no lo hace. */}
               {service.roster !== undefined && (
-                <span className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-2 pb-1 md:col-start-2 md:col-span-2">
+                <span className="col-start-2 flex flex-wrap items-center gap-x-3 gap-y-2 pt-1 md:col-span-2">
                   <span className="type-label" style={{ color: alpha(CONTROL_VIOLET, 90) }}>
                     {EVENTS.servicesUI.rosterLabel}
                   </span>

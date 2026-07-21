@@ -571,6 +571,29 @@ export const SUBMIT_FEEDBACK = {
   },
 } as const
 
+/**
+ * Copy del PANEL de contacto (el capítulo `converge`).
+ *
+ * Separado de `FORM` a propósito: `FORM` es el formulario en sí (campos, errores,
+ * estados), esto es la superficie que lo contiene y las señales de confianza que
+ * lo rodean. Son dos cosas que cambian por motivos distintos.
+ *
+ * ⚠ REGLA DURA: acá NO se inventa un dato de contacto. Ni teléfono, ni dirección
+ * postal, ni horario, ni "te respondemos en 24h". Todo lo que se muestre tiene
+ * que salir de `SITE`, que es lo único confirmado. Un tiempo de respuesta
+ * inventado en el bloque de confianza es exactamente lo contrario de confianza.
+ */
+export const CONTACT_PANEL = {
+  /** Etiqueta técnica de la cabecera del panel. Es mundo `net`: mono y seco. */
+  kicker: 'Briefing',
+  /** Encabeza la alternativa al formulario. */
+  emailLabel: 'Escribinos directo',
+  /** Encabeza la procedencia. Dato, no promesa. */
+  locationLabel: 'Base',
+  /** Compuesto desde `SITE`: municipio + provincia. Nada más. */
+  location: `${SITE.locality}, ${SITE.region}`,
+} as const
+
 /* ────────────────────────────────  APAGÓN  ─────────────────────────────── */
 
 /** Las dos líneas del blackout: el corte narrativo entre las dos divisiones. */

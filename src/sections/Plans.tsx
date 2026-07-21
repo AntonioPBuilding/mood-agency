@@ -77,12 +77,33 @@ export function Plans(): React.JSX.Element {
     const el = sectionRef.current
     if (!el || getQuality().reduced) return
 
-    const ctx = gsap.context(() => {
+    /* ── POR QUÉ HAY DOS REVELADOS Y NO UNO ──────────────────────────────────
+       El reveal original era UN timeline con `scrub` colgado del capítulo
+       entero (`top top` → `bottom bottom`). Eso sólo tiene sentido cuando el
+       contenido está CLAVADO en pantalla, y sólo lo está a partir de `md`
+       (`md:sticky`). En móvil el bloque fluye, así que el scrub y lo que se ve
+       se desacoplan: el capítulo mide 3 viewports, el timeline reparte los tres
+       paneles sobre esos 3 viewports de scroll, pero los paneles apilados miden
+       menos y suben con la página. Resultado real: cuando el scrub llega al
+       panel 2 el panel 1 ya se fue por arriba a media opacidad, y el 3 se
+       enciende cuando hace rato dejó el encuadre. De ahí el "se van demasiado
+       para arriba" — no era el layout, era que cada panel se revelaba tarde,
+       ya fuera de pantalla.
+
+       En móvil cada panel se dispara contra SÍ MISMO al entrar en el viewport,
+       sin scrub: el reveal vuelve a estar donde está el ojo.
+
+       `matchMedia` en vez de `context` porque hace falta separar por breakpoint;
+       su `revert()` limpia triggers y estilos de las dos ramas por igual. */
+    const mm = gsap.matchMedia()
+
+    // ESCRITORIO — idéntico a como estaba. Acá el bloque está pegado y el
+    // scroll es literalmente el que va montando la oferta.
+    mm.add('(min-width: 768px)', () => {
       const panels = gsap.utils.toArray<HTMLElement>('[data-panel]', el)
       const tl = gsap.timeline({
         scrollTrigger: { trigger: el, start: 'top top', end: 'bottom bottom', scrub: 0.6 },
       })
-      // Aparecen en secuencia: el scroll es el que va montando la oferta.
       panels.forEach((panel, i) => {
         tl.fromTo(
           panel,
@@ -91,21 +112,47 @@ export function Plans(): React.JSX.Element {
           i * 0.3,
         )
       })
-    }, el)
+    })
 
-    return () => ctx.revert()
+    // MÓVIL — un trigger por panel, sin scrub. Recorrido corto (6%) porque el
+    // panel ya llega casi a su sitio: lo que importa es que se encienda cuando
+    // entra, no que viaje.
+    mm.add('(max-width: 767.98px)', () => {
+      const panels = gsap.utils.toArray<HTMLElement>('[data-panel]', el)
+      for (const panel of panels) {
+        gsap.from(panel, {
+          yPercent: 6,
+          opacity: 0,
+          duration: 0.8,
+          ease: 'expo.out',
+          scrollTrigger: { trigger: panel, start: 'top 88%' },
+        })
+      }
+    })
+
+    return () => {
+      mm.revert()
+    }
   }, [])
 
   return (
     <ChapterSection id="plans" sectionRef={sectionRef} sticky={false}>
-      {/* El aire vertical se recorta en móvil (`py-[7vh]` en vez de `py-[12vh]`)
-          y se restaura tal cual a partir de `md`. En una pantalla de 553px de
-          alto útil, 12vh arriba y abajo son 130px que salen directamente del
-          presupuesto de scroll del capítulo: los tres paneles apilados ya piden
-          más de 3 viewports en móvil, y cada píxel de padding empuja la sección
-          por encima de su `vh` declarado. En escritorio no sobra ni falta:
-          idéntico a antes. */}
-      <div className="flex flex-col gap-[3vh] px-5 py-[7vh] md:sticky md:top-0 md:chapter-viewport md:justify-center md:gap-[5vh] md:px-10 md:py-[8vh]">
+      {/* AIRE VERTICAL EN MÓVIL.
+          `py-[8vh]` / `gap-[4vh]` son los mismos valores que gastan el resto de
+          capítulos-lista en móvil (ver `ControlServices`): el capítulo dejó de
+          tener su propio aire de autor. Antes iba a 7vh/3vh por miedo a
+          desbordar el presupuesto de `vh`, pero ese miedo no aplica: la sección
+          es `chapter-flow`, o sea `min-height`, y a 375px los tres paneles más
+          la nota caben con holgura dentro de los 3 viewports declarados. La
+          diferencia entre 7vh y 8vh es de ~13px en total.
+
+          NO se centra en móvil a propósito. `justify-center` sobre un flex cuyo
+          contenido pudiera crecer más que la caja recorta por ARRIBA sin dejar
+          scroll — exactamente el síntoma que se venía a arreglar. En flujo el
+          contenido arranca donde arranca y el sobrante queda abajo, donde no
+          molesta. En `md` sí se centra porque ahí la caja es un viewport exacto
+          y el contenido está calibrado para caber. Escritorio: sin cambios. */}
+      <div className="flex flex-col gap-[4vh] px-5 py-[8vh] md:sticky md:top-0 md:chapter-viewport md:justify-center md:gap-[5vh] md:px-10 md:py-[8vh]">
         <ul className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-3 md:gap-5">
           {PLANS.map((plan, i) => {
             const level = LEVELS[plan.level]
