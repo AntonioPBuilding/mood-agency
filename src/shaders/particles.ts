@@ -104,7 +104,7 @@ void main() {
 
   /* 5 · RETÍCULA ────────────────────────────────────────────────────────
      Orden absoluto. Sólo una deriva mínima para que no parezca una imagen
-     congelada; Mood Net es precisa, no muerta. */
+     congelada; Mood Creative es precisa, no muerta. */
   vec3 grid = aGrid;
   grid.y += sin(uTime * 0.5 + aGrid.x * 2.0 + aGrid.z * 1.3) * 0.025;
   pos = mix(pos, grid, uGrid);
@@ -129,7 +129,7 @@ void main() {
   col = mix(col, sideCol, uReturn);
   // Sobreexponer a propósito: el punto de luz tiene que quemar el bloom.
   col = mix(col, vec3(2.6), collapse);
-  // El latido sólo existe en Mood Control. La red no parpadea jamás.
+  // El latido sólo existe en Mood Agency. La red no parpadea jamás.
   col *= 1.0 + uBeat * uChaos * (1.0 - uGrid) * 0.85;
   vColor = col;
 

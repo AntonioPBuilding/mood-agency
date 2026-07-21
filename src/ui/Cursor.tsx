@@ -307,7 +307,7 @@ export function Cursor(): React.JSX.Element {
       }
       lastTrail = trail
 
-      // Coordenadas de Mood Net: sólo tocamos el DOM cuando el entero cambia.
+      // Coordenadas de Mood Creative: sólo tocamos el DOM cuando el entero cambia.
       const coords = coordsRef.current
       if (coords) {
         const cx = Math.round(targetX)
@@ -346,7 +346,7 @@ export function Cursor(): React.JSX.Element {
 
   return (
     <>
-      {/* Trail: exclusivo de Mood Control. Va detrás y llega tarde a propósito. */}
+      {/* Trail: exclusivo de Mood Agency. Va detrás y llega tarde a propósito. */}
       {world === 'control' && (
         <div
           ref={trailRef}
@@ -386,7 +386,7 @@ export function Cursor(): React.JSX.Element {
             Y el `mix-blend-mode` va en la MISMA capa que el filtro, no en el
             SVG de dentro: un filtro aísla la mezcla de sus DESCENDIENTES, así
             que con el blend un nivel más abajo la inversión sobre tipografía
-            clara dejaría de funcionar en Mood Control. Juntos, funcionan los
+            clara dejaría de funcionar en Mood Agency. Juntos, funcionan los
             dos: primero se filtra el elemento, después se mezcla con el fondo. */}
         <div
           className="absolute left-0 top-0"
@@ -458,7 +458,7 @@ export function Cursor(): React.JSX.Element {
           </div>
         )}
 
-        {/* Crosshair técnico de Mood Net: líneas de 1px + lectura de posición. */}
+        {/* Crosshair técnico de Mood Creative: líneas de 1px + lectura de posición. */}
         {world === 'net' && mode !== 'text' && (
           <>
             <span

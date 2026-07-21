@@ -98,7 +98,14 @@ export function Plans(): React.JSX.Element {
 
   return (
     <ChapterSection id="plans" sectionRef={sectionRef} sticky={false}>
-      <div className="flex flex-col gap-[5vh] px-5 py-[12vh] md:sticky md:top-0 md:h-screen md:justify-center md:px-10 md:py-[8vh]">
+      {/* El aire vertical se recorta en móvil (`py-[7vh]` en vez de `py-[12vh]`)
+          y se restaura tal cual a partir de `md`. En una pantalla de 553px de
+          alto útil, 12vh arriba y abajo son 130px que salen directamente del
+          presupuesto de scroll del capítulo: los tres paneles apilados ya piden
+          más de 3 viewports en móvil, y cada píxel de padding empuja la sección
+          por encima de su `vh` declarado. En escritorio no sobra ni falta:
+          idéntico a antes. */}
+      <div className="flex flex-col gap-[3vh] px-5 py-[7vh] md:sticky md:top-0 md:chapter-viewport md:justify-center md:gap-[5vh] md:px-10 md:py-[8vh]">
         <ul className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-3 md:gap-5">
           {PLANS.map((plan, i) => {
             const level = LEVELS[plan.level]

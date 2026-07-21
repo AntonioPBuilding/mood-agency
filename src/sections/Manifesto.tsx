@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef } from 'react'
-import { AGENCY } from '@/content'
+import { BRAND } from '@/content'
 import { getQuality } from '@/core/quality'
 import { SplitText } from '@/ui'
 import { ChapterSection } from './ChapterSection'
@@ -18,7 +18,7 @@ import { ACCENT, INK, alpha, chapterMeta } from './_tokens'
  * marcado especial en el copy, se detectan por su propia forma.
  */
 
-const LINES = AGENCY.claim.map((line) => line.split(' '))
+const LINES = BRAND.claim.map((line) => line.split(' '))
 const META = chapterMeta('manifesto')
 
 const isShouted = (word: string) => {
@@ -90,7 +90,7 @@ export function Manifesto(): React.JSX.Element {
         stagger={0.08}
         className="text-lead max-w-[46ch] self-end leading-snug md:max-w-[38ch]"
       >
-        {AGENCY.manifesto}
+        {BRAND.manifesto}
       </SplitText>
     </ChapterSection>
   )

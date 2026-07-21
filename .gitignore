@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Entorno. `.env.example` SÍ se versiona (es la documentación de las variables);
+# cualquier archivo con valores reales, no. `*.local` de arriba ya cubre
+# `.env.local`, pero un `.env` a secas se colaba: es el descuido clásico.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

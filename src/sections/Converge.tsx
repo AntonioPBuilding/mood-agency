@@ -165,7 +165,7 @@ export function Converge(): React.JSX.Element {
          el usuario aterrizaba medio viewport por encima del formulario: click
          en el CTA y pantalla vacía. El contenido tiene que empezar donde
          termina el ancla. */
-      innerClassName="justify-start gap-[6vh] px-5 pb-[10vh] pt-[12vh] md:px-10"
+      innerClassName="justify-start gap-[4vh] px-5 pb-[8vh] pt-[8vh] md:gap-[6vh] md:px-10 md:pb-[10vh] md:pt-[12vh]"
     >
       <div className="flex flex-col gap-6">
         <h2 className="type-mega uppercase">
@@ -229,8 +229,13 @@ export function Converge(): React.JSX.Element {
                       onChange={() => setDivision(option.id)}
                       className="peer sr-only"
                     />
+                    {/* `min-h-11` + centrado vertical en vez de `py-3`: la
+                        etiqueta es `type-label` (11px), así que con padding
+                        simétrico la caja se quedaba en 39px de alto — por
+                        debajo del mínimo táctil de 44. El aspecto no cambia:
+                        el texto sigue centrado, sólo crece el blanco. */}
                     <span
-                      className="type-label block px-4 py-3 transition-colors duration-300 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4"
+                      className="type-label flex min-h-11 items-center px-4 transition-colors duration-300 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4"
                       style={{
                         border: `1px solid ${selected ? ACCENT : alpha(INK, 22)}`,
                         color: selected ? 'var(--world-bg)' : alpha(INK, 75),

@@ -1,5 +1,5 @@
 /**
- * ESTADO 4 · MOOD CONTROL — haces de luz, humo y halos.
+ * ESTADO 4 · MUNDO 'control' = EVENTOS (marca Mood Agency) — haces de luz, humo y halos.
  *
  * Nada de esto es volumetría real. La volumetría real es raymarching, y el
  * raymarching a 60 fps en un móvil no existe. Lo que hace la industria —y lo

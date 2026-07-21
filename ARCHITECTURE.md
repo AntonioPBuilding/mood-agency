@@ -121,7 +121,7 @@ export function SplitText(props: {
   trigger?: boolean
 }): JSX.Element
 
-// Texto que se "descifra" — la voz tipográfica de Mood Net.
+// Texto que se "descifra" — la voz tipográfica de Mood Creative.
 export function DecodeText(props: {
   children: string
   className?: string

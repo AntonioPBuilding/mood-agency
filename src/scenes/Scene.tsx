@@ -145,7 +145,7 @@ export function Scene() {
       camera.lookAt(cx, cy * 0.35, 0)
 
       // Roll: sólo durante el show. Un plano inclinado es lenguaje de
-      // concierto; en Mood Net sería ruido y contradice el discurso.
+      // concierto; en Mood Creative sería ruido y contradice el discurso.
       const show = range(p, 0.24, 0.3) * (1 - range(p, 0.48, 0.52))
       camera.rotation.z = Math.sin(time.current * 0.35) * 0.045 * show
 

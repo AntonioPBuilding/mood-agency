@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
-import { AGENCY } from '@/content'
+import { BRAND } from '@/content'
 import { getQuality } from '@/core/quality'
 import { SplitText } from '@/ui'
 import { ChapterSection } from './ChapterSection'
@@ -19,7 +19,7 @@ import { ACCENT, INK, alpha, chapterMeta } from './_tokens'
  * lectores de pantalla deletrean las palabras escritas en caja alta real.
  */
 
-const WORDS = AGENCY.name.split(' ')
+const WORDS = BRAND.name.split(' ')
 const META = chapterMeta('hero')
 
 export function Hero(): React.JSX.Element {
@@ -51,12 +51,12 @@ export function Hero(): React.JSX.Element {
     <ChapterSection
       id="hero"
       sectionRef={sectionRef}
-      ariaLabel={AGENCY.name}
+      ariaLabel={BRAND.name}
       innerClassName="justify-between px-5 py-6 md:px-10 md:py-10"
     >
       <header className="flex items-start justify-between gap-6" data-fade>
         <p className="type-label max-w-[16ch]" style={{ color: alpha(INK, 65) }}>
-          {AGENCY.tagline}
+          {BRAND.tagline}
         </p>
         <p className="type-label shrink-0" style={{ color: alpha(INK, 35) }}>
           {META.index}

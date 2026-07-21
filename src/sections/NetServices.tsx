@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { NET } from '@/content'
+import { TECH } from '@/content'
 import { getQuality } from '@/core/quality'
 import { ChapterSection } from './ChapterSection'
 import { gsap } from './_gsap'
 import { BG, INK, NET_BLUE, NET_CYAN, NET_GREY, alpha } from './_tokens'
 
 /**
- * SERVICIOS DE NET — una red, no una tabla.
+ * SERVICIOS DE MOOD CREATIVE (capítulo `netServices`) — una red, no una tabla.
  *
- * Los servicios están conectados de verdad (`NET.edges`): al enfocar un nodo se
+ * Los servicios están conectados de verdad (`TECH.edges`): al enfocar un nodo se
  * encienden sus aristas y el resto se apaga. Eso comunica algo que una lista no
  * puede: que la IA no se vende sin automatización, ni una app sin infra.
  *
@@ -62,7 +62,7 @@ export function NetServices(): React.JSX.Element {
     })
 
     setSegments(
-      NET.edges.flatMap(([a, b]) => {
+      TECH.edges.flatMap(([a, b]) => {
         const from = centers.get(a)
         const to = centers.get(b)
         if (!from || !to) return []
@@ -102,7 +102,7 @@ export function NetServices(): React.JSX.Element {
   const connected = new Set<string>()
   if (active) {
     connected.add(active)
-    for (const [a, b] of NET.edges) {
+    for (const [a, b] of TECH.edges) {
       if (a === active) connected.add(b)
       if (b === active) connected.add(a)
     }
@@ -113,9 +113,20 @@ export function NetServices(): React.JSX.Element {
       id="netServices"
       sectionRef={sectionRef}
       sticky={false}
-      innerClassName="justify-center gap-[7vh] px-5 py-[14vh] md:px-10"
+      innerClassName="justify-center gap-[5vh] px-5 py-[9vh] md:gap-[7vh] md:px-10 md:py-[14vh]"
     >
-      <h2 className="type-huge max-w-[20ch] text-balance">{NET.claim}</h2>
+      {/* ENCABEZADO EN DOS PISOS, y el de arriba no es decoración.
+          El claim de la división es una frase de agencia: buena para el humano,
+          muda para un buscador —no contiene ni una de las cosas que se venden—.
+          El overline pone las palabras reales ("desarrollo web", "inteligencia
+          artificial") DENTRO del `<h2>`, visibles, en la voz mono que ya habla
+          esta división. Nada de texto oculto: si merece indexarse, merece leerse. */}
+      <h2 className="flex flex-col gap-3 md:gap-4">
+        <span className="type-label" style={{ color: NET_CYAN }}>
+          {TECH.servicesHeading}
+        </span>
+        <span className="type-huge block max-w-[20ch] text-balance">{TECH.claim}</span>
+      </h2>
 
       <div className="relative">
         {/* Aristas. Sin `viewBox`: 1 unidad SVG = 1 px CSS, que es justo lo que
@@ -147,7 +158,7 @@ export function NetServices(): React.JSX.Element {
           data-grid
           className="relative grid grid-cols-1 gap-3 md:grid-cols-12 md:gap-4"
         >
-          {NET.services.map((service) => {
+          {TECH.services.map((service) => {
             const place = LAYOUT[service.id]
             const dimmed = active !== null && !connected.has(service.id)
             const lit = active === service.id

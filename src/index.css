@@ -1,8 +1,13 @@
 @import 'tailwindcss';
 
 /* ────────────────────────────────────────────────────────────────────────────
-   MOOD AGENCY · design tokens
+   MOOD CONTROL · design tokens
    Los tres mundos viven acá. Los componentes NUNCA hardcodean un hex.
+
+   ⚠ Los prefijos `control-` y `net-` son IDS DE MUNDO, no marcas: `control` es
+   el mundo de eventos (marca Mood Agency) y `net` el de tecnología (marca Mood
+   Creative). La marca madre, Mood Control, no tiene mundo propio: es la landing
+   entera. Ver la cabecera de `src/content.ts`.
    ──────────────────────────────────────────────────────────────────────────── */
 
 @theme {
@@ -12,13 +17,13 @@
   --color-void-accent: #8a7cff;
   --color-void-warm: #ff7a59;
 
-  /* MOOD CONTROL — el show */
+  /* EVENTOS · id 'control' · marca Mood Agency — el show */
   --color-control-bg: #0a0208;
   --color-control-violet: #b026ff;
   --color-control-blue: #00a3ff;
   --color-control-red: #ff2d55;
 
-  /* MOOD NET — la precisión */
+  /* TECNOLOGÍA · id 'net' · marca Mood Creative — la precisión */
   --color-net-bg: #0b0d0f;
   --color-net-cyan: #00e5ff;
   --color-net-blue: #2e6bff;
@@ -159,7 +164,7 @@
       0 1px 2px rgb(0 0 0 / 0.9);
   }
 
-  /* Label técnico de Mood Net. */
+  /* Label técnico de Mood Creative. */
   .type-label {
     font-family: var(--font-mono);
     font-size: 0.6875rem;
@@ -179,6 +184,63 @@
     will-change: transform, opacity;
     transform: translateZ(0);
   }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ALTURA DE VIEWPORT EN MÓVIL — por qué `svh` y NO `dvh`
+
+   Las tres unidades miden cosas distintas:
+
+     vh  (= lvh) → viewport con la barra de direcciones OCULTA. Estático.
+     svh         → viewport con la barra de direcciones VISIBLE. Estático.
+     dvh         → el viewport de AHORA MISMO. Cambia mientras scrolleás.
+
+   `vh` era el bug: cada contenedor medía el viewport GRANDE, así que con la
+   barra desplegada el último tramo de cada capítulo quedaba debajo del corte.
+
+   Pero `dvh` NO es el arreglo acá, es un arreglo peor. Toda la coreografía 3D
+   es scroll-linked y lee `scroll / limit` (`useSmoothScroll`). Si el alto del
+   documento se define en `dvh`, al retraerse la barra el documento ENTERO
+   cambia de alto en vivo y `limit` se mueve con él. Con ~12% de diferencia
+   entre viewport grande y pequeño en iOS, el progreso salta hasta 6 puntos a
+   mitad de scroll: el Núcleo se teletransporta de estado. `vh` mantenía el
+   documento estable y sólo movía `limit` un ~0.5% (por `innerHeight`), que es
+   ruido; `dvh` multiplicaría ese error por veinte.
+
+   `svh` es la única que cumple las dos condiciones a la vez: es ESTÁTICA —el
+   documento no cambia de alto nunca, el progreso no salta— y es el viewport
+   MÁS PEQUEÑO, así que nada se corta por abajo en ningún estado de la barra.
+   El precio es una franja de aire cuando la barra está retraída. Barato.
+
+   En escritorio las tres unidades valen lo mismo: esto no toca nada allí.
+
+   La doble declaración es el fallback: los navegadores sin `svh`
+   (Safari < 15.4, Chrome < 108) se quedan con la línea de `vh` y se comportan
+   exactamente como hasta ahora.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* Alto EXACTO del capítulo. Sólo para secciones sticky: el recorrido pegado es
+   justo `alto de sección − viewport`, así que el alto no puede ser aproximado. */
+@utility chapter-track {
+  height: calc(var(--chapter-vh, 1) * 100vh);
+  height: calc(var(--chapter-vh, 1) * 100svh);
+}
+
+/* Alto MÍNIMO del capítulo. Para secciones que fluyen: el `vh` de `CHAPTERS` es
+   su presupuesto de scroll, no una jaula. Con `height` fijo, un capítulo-lista
+   cuyo contenido no entra (móvil, tipografía grande, texto en otro idioma) se
+   derramaba ENCIMA del capítulo siguiente. Con `min-height` la sección crece y
+   nunca hay solape: se paga con un poco más de documento, que es infinitamente
+   mejor que dos capítulos superpuestos. */
+@utility chapter-flow {
+  min-height: calc(var(--chapter-vh, 1) * 100vh);
+  min-height: calc(var(--chapter-vh, 1) * 100svh);
+}
+
+/* Un viewport exacto. El contenedor pegado de un capítulo sticky. */
+@utility chapter-viewport {
+  height: 100vh;
+  height: 100svh;
 }
 
 /* El usuario pidió menos movimiento. Se respeta: misma historia, sin viaje. */

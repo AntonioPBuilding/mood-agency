@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Mood Control — Creamos estados de ánimo">
+  <title>Mood Control — Creamos estados de ánimo</title>
+
+  <!--
+    TARJETA SOCIAL · 1200×630 (proporción 1.91:1, la que piden OG y Twitter).
+
+    Este archivo es la FUENTE. Las redes sociales no renderizan SVG en las
+    previsualizaciones, así que lo que se publica es el PNG exportado desde
+    acá. Ver `public/README.md` para el comando de exportación.
+
+    La composición repite la idea de la landing: el Núcleo partido en dos
+    mitades —violeta Control, cian Net— y la tipografía como imagen.
+  -->
+
+  <defs>
+    <radialGradient id="glowViolet" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#B026FF" stop-opacity="0.42"/>
+      <stop offset="100%" stop-color="#B026FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowCyan" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#00E5FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hairline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#B026FF"/>
+      <stop offset="100%" stop-color="#00E5FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- VOID: el fondo de la agencia, no un negro cualquiera. -->
+  <rect width="1200" height="630" fill="#050505"/>
+
+  <!-- Los dos mundos respirando detrás del texto. -->
+  <ellipse cx="120" cy="600" rx="620" ry="480" fill="url(#glowViolet)"/>
+  <ellipse cx="1010" cy="300" rx="560" ry="470" fill="url(#glowCyan)"/>
+
+  <!-- Filo superior: violeta → cian. Las dos divisiones en una sola línea. -->
+  <rect width="1200" height="5" fill="url(#hairline)"/>
+
+  <!-- EL NÚCLEO, a escala de cartel. Se sale del lienzo por la derecha:
+       recortar la marca la hace más grande de lo que es. -->
+  <g transform="translate(1015 315)">
+    <circle r="248" fill="#050505" opacity="0.55"/>
+    <path d="M0 -196A196 196 0 0 0 0 196Z" transform="translate(-7 0)" fill="#B026FF"/>
+    <path d="M0 -196A196 196 0 0 1 0 196Z" transform="translate(7 0)" fill="#00E5FF"/>
+    <circle r="74" fill="#050505"/>
+  </g>
+
+  <!-- Cabecera: marca + firma de división. -->
+  <g transform="translate(72 74)">
+    <rect width="52" height="52" rx="12" fill="#0B0D0F"/>
+    <path d="M26 8A18 18 0 0 0 26 44Z" transform="translate(-1.5 0)" fill="#B026FF"/>
+    <path d="M26 8A18 18 0 0 1 26 44Z" transform="translate(1.5 0)" fill="#00E5FF"/>
+    <text x="72" y="37"
+          font-family="Archivo, 'Arial Narrow', Helvetica, Arial, sans-serif"
+          font-size="34" font-weight="800" letter-spacing="-0.5" fill="#F2F0EB">MOOD CONTROL</text>
+  </g>
+
+  <!-- El claim. La tipografía ES la imagen. -->
+  <g font-family="Archivo, 'Arial Narrow', Helvetica, Arial, sans-serif"
+     font-size="96" font-weight="800" letter-spacing="-3.8" fill="#F2F0EB">
+    <text x="72" y="290">CREAMOS</text>
+    <text x="72" y="376">ESTADOS</text>
+    <text x="72" y="462">DE ÁNIMO</text>
+  </g>
+
+  <!-- Las dos divisiones, en la voz mono de Mood Creative.
+       Los descriptores van cortos a propósito: esta tarjeta se ve casi siempre
+       como miniatura en un feed, y una línea larga en mono ahí es una mancha
+       gris. Dos palabras por división es lo que se llega a leer. -->
+  <g font-family="'JetBrains Mono', ui-monospace, 'Courier New', monospace"
+     font-size="16" letter-spacing="2.4">
+    <rect x="72" y="530" width="4" height="26" fill="#B026FF"/>
+    <text x="92" y="549" fill="#F2F0EB" opacity="0.88">MOOD AGENCY</text>
+    <text x="92" y="576" fill="#F2F0EB" opacity="0.45">EVENTOS Y EXPERIENCIAS</text>
+
+    <rect x="452" y="530" width="4" height="26" fill="#00E5FF"/>
+    <text x="472" y="549" fill="#F2F0EB" opacity="0.88">MOOD CREATIVE</text>
+    <text x="472" y="576" fill="#F2F0EB" opacity="0.45">TECNOLOGÍA E IA</text>
+  </g>
+</svg>

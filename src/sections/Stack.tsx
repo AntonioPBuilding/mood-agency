@@ -104,7 +104,7 @@ export function Stack(): React.JSX.Element {
       id="stack"
       sectionRef={sectionRef}
       sticky={false}
-      innerClassName="justify-center gap-[10vh] py-[16vh]"
+      innerClassName="justify-center gap-[7vh] py-[10vh] md:gap-[10vh] md:py-[16vh]"
     >
       <div className="flex flex-col gap-4 md:gap-6">
         <MarqueeRow reverse={false} speed={38} />

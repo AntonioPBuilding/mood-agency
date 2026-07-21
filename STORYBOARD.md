@@ -48,7 +48,7 @@ enciende perezoso (45). Está en `blackoutAmount()`.
 ser variable en ancho, **las letras se estiran y se comprimen con el scroll**.
 Eso resuelve el "cambios de peso" del brief sin coste de rendimiento.
 
-**JetBrains Mono** para datos, labels y el decode-text de Mood Net.
+**JetBrains Mono** para datos, labels y el decode-text de Mood Creative.
 
 Títulos hasta `22rem`. La tipografía ES la imagen, no un adorno.
 

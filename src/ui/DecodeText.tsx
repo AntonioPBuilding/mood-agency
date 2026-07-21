@@ -5,7 +5,7 @@ import { getQuality } from '@/core/quality'
 import { DECODE_GLYPHS } from './uiCopy'
 
 /**
- * TEXTO QUE SE DESCIFRA — la voz tipográfica de Mood Net.
+ * TEXTO QUE SE DESCIFRA — la voz tipográfica de Mood Creative.
  *
  * Cada carácter cicla por glifos aleatorios y se fija de izquierda a derecha,
  * como un terminal resolviendo una clave. Dos decisiones que sostienen el

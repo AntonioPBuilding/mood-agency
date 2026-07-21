@@ -20,7 +20,7 @@ import {
   Color,
   ShaderMaterial,
 } from 'three'
-import { AGENCY } from '@/content'
+import { BRAND } from '@/content'
 import { clamp01, range } from '@/core/chapters'
 import { blackoutAmount, WORLDS } from '@/core/palette'
 import type { QualityLive } from '@/core/quality'
@@ -217,11 +217,12 @@ export function Particles() {
   const gl = useThree((s) => s.gl)
 
   const { geometry, count } = useMemo(
-    // "MOOD" sale de @/content, no escrito a mano: si mañana la agencia cambia
-    // de nombre, el wordmark 3D cambia con ella.
+    // "MOOD" sale de @/content, no escrito a mano: es la primera palabra de la
+    // marca madre, así que si mañana cambia de nombre el wordmark 3D cambia con
+    // ella. Ojo: es `BRAND` (Mood Control), no una de las dos divisiones.
     // El conteo es el del presupuesto de ARRANQUE: es el techo. El degradado
     // adaptativo dibuja menos, pero jamás realoca (ver más abajo).
-    () => buildBuffers(q.particles, AGENCY.name.split(' ')[0].toUpperCase()),
+    () => buildBuffers(q.particles, BRAND.name.split(' ')[0].toUpperCase()),
     [q.particles],
   )
 

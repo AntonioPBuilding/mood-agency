@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { CLIENTS } from '@/content'
+import { CLIENTS, CLIENTS_UI } from '@/content'
 import { getQuality } from '@/core/quality'
 import { ChapterSection } from './ChapterSection'
 import { gsap } from './_gsap'
+import { INK, alpha } from './_tokens'
 
 /**
  * CLIENTES — wordmarks, no logos.
@@ -34,7 +35,47 @@ import { gsap } from './_gsap'
  *    `transition: color`, pero sin tocar el pintado.
  */
 
+/**
+ * ESTADO VACÍO — mismo criterio que la galería, por la misma razón.
+ *
+ * `CLIENTS` está vacío a propósito: los diez nombres que había eran inventados
+ * (ver `@/content`). Se monta esto en lugar del muro, no encima: un `gsap.from`
+ * sobre una lista de cero elementos es un ScrollTrigger que no anima nada.
+ *
+ * ⚠ LA SECCIÓN SIGUE EXISTIENDO, y no es opcional. `clients` mide 1 viewport en
+ * `CHAPTER_MAP` y la escena 3D está calibrada contra ese número: si el capítulo
+ * desaparece del documento, todo lo que viene detrás se adelanta un viewport
+ * respecto de la coreografía.
+ *
+ * El tono es deliberadamente discreto —un `type-label` al 30% de opacidad, la
+ * misma voz que los índices de capítulo— porque el muro de clientes es apoyo, no
+ * titular. Un cartel grande diciendo "próximamente" es peor que no tener muro.
+ */
+function ClientsEmpty(): React.JSX.Element {
+  return (
+    <ChapterSection
+      id="clients"
+      sticky={false}
+      innerClassName="items-center justify-center px-5 py-[10vh] md:px-10"
+    >
+      <p className="type-label text-center" style={{ color: alpha(INK, 30) }}>
+        {CLIENTS_UI.empty}
+      </p>
+    </ChapterSection>
+  )
+}
+
+/**
+ * CLIENTES — decide qué versión del capítulo se monta.
+ *
+ * `CLIENTS` es una constante de módulo: la rama se resuelve una vez y no cambia
+ * en toda la sesión, así que no hay hooks condicionales en ningún lado.
+ */
 export function Clients(): React.JSX.Element {
+  return CLIENTS.length === 0 ? <ClientsEmpty /> : <ClientsWall />
+}
+
+function ClientsWall(): React.JSX.Element {
   const sectionRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {

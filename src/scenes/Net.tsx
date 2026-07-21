@@ -1,8 +1,8 @@
 /**
- * ESTADO 5 · MOOD NET.
+ * ESTADO 5 · MUNDO 'net' = TECNOLOGÍA (marca Mood Creative).
  *
  * Cuando las partículas se ordenan en la retícula, esta capa las convierte en
- * una RED: nodos y aristas. Estética opuesta a Mood Control —cero bloom, líneas
+ * una RED: nodos y aristas. Estética opuesta a Mood Agency —cero bloom, líneas
  * de 1px, cian y azul, nada de humo—. El contraste entre los dos mundos es todo
  * el argumento de la página.
  *
@@ -24,7 +24,7 @@ import {
   OctahedronGeometry,
   PointsMaterial,
 } from 'three'
-import { NET } from '@/content'
+import { TECH } from '@/content'
 import { clamp01, range } from '@/core/chapters'
 import { blackoutAmount, WORLDS } from '@/core/palette'
 import { getQuality } from '@/core/quality'
@@ -63,10 +63,10 @@ function buildNet(): NetData {
   const rand = mulberry32(0x5eed)
 
   /* ── Nodos de servicio ────────────────────────────────────────────────
-     Ocho, uno por servicio de Mood Net. La disposición es determinista (dos
+     Ocho, uno por servicio de Mood Creative. La disposición es determinista (dos
      filas de cuatro, profundidad repartida con la razón áurea) para que las
      aristas de @/content se lean como un diagrama y no como una maraña. */
-  const services = NET.services
+  const services = TECH.services
   const serviceCount = services.length
   const serviceNodes = new Float32Array(serviceCount * 3)
   const indexById = new Map<string, number>()
@@ -80,9 +80,9 @@ function buildNet(): NetData {
     indexById.set(services[i].id, i)
   }
 
-  // Las aristas NO son decorativas: son exactamente las de NET.edges.
+  // Las aristas NO son decorativas: son exactamente las de TECH.edges.
   const serviceEdgeList: number[] = []
-  for (const [from, to] of NET.edges) {
+  for (const [from, to] of TECH.edges) {
     const a = indexById.get(from)
     const b = indexById.get(to)
     if (a === undefined || b === undefined) continue
@@ -260,7 +260,7 @@ export function Net() {
     if (q.reduced) return
 
     // Paralaje mínimo, derivado del SCROLL y no de un timer: la red no deriva
-    // sola, responde a que el usuario avanza. Mood Net no hace nada gratis.
+    // sola, responde a que el usuario avanza. Mood Creative no hace nada gratis.
     g.rotation.y = Math.sin(p * 9) * 0.09
 
     const nodes = nodesRef.current

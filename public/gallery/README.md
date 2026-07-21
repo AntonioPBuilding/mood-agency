@@ -1,27 +1,36 @@
-# Fotos del portfolio (Mood Control)
+# Fotos del portfolio (Mood Agency)
 
 Acá van las imágenes reales de cada proyecto de la galería. Todo lo que está en
 `public/` se sirve tal cual desde la raíz del sitio: `public/gallery/g1/01.jpg`
 se pide como `/gallery/g1/01.jpg`. **No hace falta tocar código para subir una
 foto.**
 
+## ⚠ Primero: la galería está VACÍA
+
+`GALLERY` en `src/content.ts` es un array vacío a propósito. Los ocho proyectos
+que había (`Nocturna`, `Blackroom`, `Solstice`…) eran inventados, con clientes y
+métricas que no existieron nunca, y se borraron enteros.
+
+O sea que **no hay carpetas que rellenar todavía**: primero se declara el
+proyecto real en `content.ts` y después se suben sus fotos acá. El orden importa,
+porque el `id` que le pongas al proyecto ES el nombre de su carpeta.
+
+Antes de añadir proyectos, leé el bloque de comentario sobre `GALLERY`: el
+carrusel es un anillo infinito y necesita **un mínimo de 5 proyectos** (8 para
+estar tranquilo) o aparece una costura en los extremos.
+
 ## Dónde va cada archivo
+
+Un directorio por proyecto, con el `id` que ese proyecto tenga en `content.ts`:
 
 ```
 public/gallery/
-  g1/  01.jpg  02.jpg  03.jpg     Nocturna      · Festival
-  g2/  01.jpg  02.jpg  03.jpg     Blackroom     · Club series
-  g3/  01.jpg  02.jpg  03.jpg     Solstice      · Open air
-  g4/  01.jpg  02.jpg  03.jpg     Reactor       · Mapping
-  g5/  01.jpg  02.jpg  03.jpg     Pulse         · Corporate
-  g6/  01.jpg  02.jpg  03.jpg     Neón Sur      · Festival
-  g7/  01.jpg  02.jpg  03.jpg     Vórtice       · Immersive
-  g8/  01.jpg  02.jpg  03.jpg     Cierre        · Aftermovie
+  <id-del-proyecto>/  01.jpg  02.jpg  03.jpg
 ```
 
-El `id` de la carpeta (`g1`…`g8`) y la lista de archivos salen de
-`CONTROL.gallery` en `src/content.ts`. Si querés más o menos de tres fotos por
-proyecto, se edita el array `images` de ese proyecto y listo.
+El `id` de la carpeta y la lista de archivos salen del array `images` de cada
+`GalleryProject` en `src/content.ts`. Si querés más o menos de tres fotos por
+proyecto, se edita ese array y listo.
 
 La **primera** imagen (`01.jpg`) es la portada: es la que se ve en la tarjeta
 del carrusel. Elegí la más contundente, no la más explicativa.
@@ -43,7 +52,7 @@ Notas que importan:
   `src/content.ts`. El componente no adivina extensiones.
 - Las fotos se recortan con `object-fit: cover` en la tarjeta: dejá aire arriba
   y abajo y **no pongas nada importante en los bordes**.
-- Fotos oscuras y contrastadas. La galería vive dentro del mundo Mood Control
+- Fotos oscuras y contrastadas. La galería vive dentro del mundo Mood Agency
   (neón sobre negro); una foto sobreexpuesta rompe el bloque visual.
 - Nombres en minúscula y con dos dígitos: `01.jpg`, no `1.JPG` ni `Foto final
   (2).jpg`. El servidor distingue mayúsculas.

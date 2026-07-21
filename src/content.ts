@@ -1,197 +1,242 @@
 /**
  * Todo el copy y los datos de la landing, en un solo lugar.
  *
- * Ningún componente escribe texto a mano. Si mañana Mood Agency cambia un
+ * Ningún componente escribe texto a mano. Si mañana Mood Control cambia un
  * servicio o quiere la web en inglés, se toca ESTE archivo y nada más.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * ⚠ NOMBRES DE MARCA vs. IDENTIFICADORES INTERNOS — leer ANTES de tocar nada.
+ *
+ * La empresa se llama MOOD CONTROL y tiene dos divisiones:
+ *
+ *                          MOOD CONTROL              ← la marca madre (BRAND)
+ *                                │
+ *                  ┌─────────────┴─────────────┐
+ *             MOOD AGENCY                 MOOD CREATIVE
+ *          eventos, fiestas, DJs        informática, IA, web
+ *            id interno 'control'          id interno 'net'
+ *
+ * Los ids `'control'` y `'net'` NO son nombres de marca: son identificadores
+ * TÉCNICOS, cableados en `WorldId` y `ChapterId` (`@/core/chapters`), en `WORLDS`
+ * (`@/core/palette`), en los 7 estados del Núcleo (`@/scenes`) y en los shaders.
+ * Se quedan exactamente como están: renombrarlos es alto riesgo y cero beneficio
+ * para el visitante.
+ *
+ * La traducción, que es lo único que hay que memorizar:
+ *
+ *   id 'control'  →  mundo de EVENTOS     →  marca Mood Agency    →  `EVENTS`
+ *   id 'net'      →  mundo de TECNOLOGÍA  →  marca Mood Creative  →  `TECH`
+ *
+ * Y el que más confunde: la marca madre se llama Mood Control, que NO es el
+ * mundo `'control'`. El mundo `'control'` es Mood Agency.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
-export const AGENCY = {
-  name: 'Mood Agency',
+/* ────────────────────────────  LA MARCA MADRE  ─────────────────────────── */
+
+export const BRAND = {
+  name: 'Mood Control',
   tagline: 'Creamos estados de ánimo',
   claim: ['No hacemos webs.', 'No hacemos eventos.', 'Creamos ESTADOS DE ÁNIMO.'],
   manifesto:
     'Un mood es lo que queda cuando el evento terminó y la pantalla se apagó. Nosotros diseñamos esa huella: con luz, con sonido, con código.',
 } as const
 
-/* ────────────────────────────  MOOD CONTROL  ──────────────────────────── */
+/**
+ * IDENTIDAD PÚBLICA DEL SITIO — ÚNICO PUNTO DE CONFIGURACIÓN.
+ *
+ * Dominio, contacto, ubicación y metadatos. De acá salen el JSON-LD
+ * (`@/ui/structuredData`), el `page` que viaja en cada lead y los textos que
+ * `index.html` refleja. Si cambia algo del negocio, se cambia ACÁ.
+ *
+ * ⚠ LA ÚNICA EXCEPCIÓN, Y HAY QUE CONOCERLA: `index.html` es HTML estático y no
+ * puede importar este módulo. Sus metadatos —`<title>`, `description`, canonical,
+ * `og:*`, `twitter:*`— son una COPIA de `meta` y de `url`. No es un descuido:
+ * los rastreadores sociales (Facebook, X, WhatsApp) no ejecutan JavaScript, así
+ * que esos valores tienen que estar en el HTML servido o la previsualización
+ * sale vacía.
+ *
+ * Para que esa copia no se pudra en silencio, `injectStructuredData()` compara
+ * las dos fuentes EN DESARROLLO y grita por consola en cuanto divergen. O sea:
+ * se toca `SITE`, y si hay que replicar algo en `index.html` el propio proyecto
+ * te lo dice antes de que llegue a producción.
+ *
+ * También son copias servidas tal cual, y no pueden dejar de serlo:
+ * `public/site.webmanifest`, `public/robots.txt` y `public/sitemap.xml`.
+ */
+export const SITE = {
+  /** Dominio DEFINITIVO, sin barra final. Todo lo absoluto se construye desde acá. */
+  url: 'https://moodcontrol.es',
+  name: BRAND.name,
+  locale: 'es_ES',
+  lang: 'es',
+  /**
+   * ⚠ PENDIENTE DE CONFIRMAR CON EL CLIENTE: el buzón se dedujo del dominio
+   * nuevo, no lo confirmó nadie. Antes de publicar hay que verificar que existe
+   * y que alguien lo lee — es la única vía de contacto además del formulario.
+   */
+  email: 'hola@moodcontrol.es',
 
-export const CONTROL = {
+  /* ── Dónde está la empresa. Base real, confirmada por el cliente. ────────── */
+
+  /** Municipio. Alimenta `address.addressLocality` y los alias de marca. */
+  locality: 'Utrera',
+  /** Provincia. Alimenta `address.addressRegion` y los alias de marca. */
+  region: 'Sevilla',
+  /** Código ISO 3166-1. Alimenta `address.addressCountry`. */
+  country: 'ES',
+  /**
+   * Dónde se trabaja, no dónde se está. El cliente lo dijo explícito: la base es
+   * Utrera pero se trabaja en cualquier sitio, así que España entera entra acá.
+   * No se declara nada fuera de España porque nadie lo confirmó.
+   */
+  areaServed: ['Utrera', 'Sevilla', 'España'],
+  /** Idiomas en los que se atiende. */
+  languages: ['es', 'en'],
+  /**
+   * Perfiles oficiales. VACÍO A PROPÓSITO hasta que existan las URLs reales:
+   * alimentan el `sameAs` del JSON-LD y los enlaces del pie, y las dos cosas
+   * fallan igual de mal con un placeholder. Un `sameAs` inventado le afirma a
+   * Google una identidad que no podés demostrar; un enlace `href="#"` en el pie
+   * de una agencia es la misma clase de humo que una métrica inventada.
+   * Se rellenan acá y aparecen solos en los dos sitios.
+   */
+  social: [] as readonly { label: string; href: string }[],
+  /**
+   * METADATOS DE CARA A BUSCADORES Y REDES.
+   *
+   * Fuente de verdad de lo que `index.html` copia. El guardia de desarrollo de
+   * `structuredData.ts` avisa si las dos versiones dejan de coincidir.
+   */
+  meta: {
+    /** `<title>` y `og:title`. Marca + las dos divisiones + dónde. */
+    title: 'Mood Control — Eventos, DJs y desarrollo web en Utrera, Sevilla',
+    description:
+      'Mood Control, desde Utrera (Sevilla): Mood Agency produce eventos, DJs y festivales; Mood Creative desarrolla web, inteligencia artificial y software a medida.',
+    /** Más corta y más directa: en una tarjeta social no hay sitio para matices. */
+    ogDescription:
+      'Dos divisiones, un mismo estándar. Mood Agency: producción de eventos, DJs y experiencias. Mood Creative: desarrollo web, IA y software a medida.',
+    /** Texto alternativo de la tarjeta social. Lo leen quienes no ven la imagen. */
+    ogAlt:
+      'Mood Control — Creamos estados de ánimo. Eventos con Mood Agency, tecnología e IA con Mood Creative.',
+    /** Ruta de la tarjeta social. Se sirve ABSOLUTA: las redes no resuelven rutas relativas. */
+    ogImage: '/og.png',
+  },
+} as const
+
+/** Home canónica, con barra final. Es lo que declara `<link rel="canonical">`. */
+export const HOME_URL = `${SITE.url}/`
+
+/* ─────────  MOOD AGENCY · división de eventos (mundo id 'control')  ─────── */
+
+/**
+ * Un servicio de la división de eventos.
+ *
+ * `roster` sólo lo lleva el servicio de booking: son los artistas REALES con los
+ * que se trabaja, no un ejemplo. Es opcional porque los otros ocho servicios no
+ * tienen artistas asociados, no porque sea relleno.
+ */
+export interface EventService {
+  /** Número de cartel. Dos dígitos, se muestra tal cual. */
+  n: string
+  title: string
+  desc: string
+  roster?: readonly string[]
+}
+
+const EVENT_SERVICES: readonly EventService[] = [
+  { n: '01', title: 'Organización de eventos', desc: 'Concepto, producción y dirección de principio a fin.' },
+  {
+    n: '02',
+    title: 'DJs & Booking',
+    desc: 'Line-ups curados. Artistas que entienden el sitio y la hora.',
+    /* Roster REAL, dato del cliente. Si entra o sale un artista se toca esta
+       lista y nada más: `ControlServices` la pinta sola. */
+    roster: ['DJ Morales', 'DJ Fati Coronas', 'Malbie + Richa', 'Rock & Bikes'],
+  },
+  { n: '03', title: 'Festivales', desc: 'Multi-escenario, logística, permisos y operación integral.' },
+  { n: '04', title: 'Producción audiovisual', desc: 'Aftermovies, contenido en vivo y visuales generativos.' },
+  { n: '05', title: 'Sonido profesional', desc: 'Diseño e ingeniería de PA. Presión sin fatiga.' },
+  { n: '06', title: 'Iluminación', desc: 'Diseño lumínico, timecode y programación al detalle.' },
+  { n: '07', title: 'Escenarios', desc: 'Estructura, rigging y escenografía a medida.' },
+  { n: '08', title: 'Branding para eventos', desc: 'Identidad que funciona en un cartel y en una pulsera.' },
+  { n: '09', title: 'Experiencias inmersivas', desc: 'Mapping, interacción y espacios que responden.' },
+]
+
+/** Un proyecto del portfolio. Ver `GALLERY` para saber cómo se rellena. */
+export interface GalleryProject {
+  /** Id estable. Es también la carpeta de fotos: `public/gallery/<id>/`. */
+  id: string
+  title: string
+  /** Línea de contexto corta: tipo de proyecto y un rasgo que lo sitúe. */
+  meta: string
+  year: string
+  client: string
+  location: string
+  /** Qué hicimos NOSOTROS, no qué se hizo. */
+  role: readonly string[]
+  description: string
+  stats: readonly { label: string; value: string }[]
+  /** Rutas a `public/gallery/<id>/NN.jpg`. Hay placeholder por cada imagen que falte. */
+  images: readonly string[]
+  /** Qué neón de la división domina la tarjeta. Es DATO: el componente lo traduce a token. */
+  accent: 'violet' | 'blue' | 'red'
+}
+
+/**
+ * PORTFOLIO — VACÍO A PROPÓSITO.
+ *
+ * Acá había ocho proyectos (`Nocturna`, `Blackroom`, `Solstice`, `Reactor`,
+ * `Pulse`, `Neón Sur`, `Vórtice`, `Cierre`) con clientes, ubicaciones y métricas
+ * —"12.000 asistentes", "96% de ocupación", "1,4 M de reproducciones"— que NO
+ * existieron nunca: los generó una IA para maquetar. Publicar eso en la web de
+ * una agencia real no es licencia creativa, es una mentira verificable.
+ *
+ * ── CÓMO SE RELLENA ─────────────────────────────────────────────────────────
+ *
+ * 1. Un objeto `GalleryProject` por proyecto REAL. El campo que no puedas
+ *    confirmar con el cliente NO se rellena a ojo: se pregunta.
+ * 2. `stats` admite `[]` sin romper nada, y es justo donde más tienta inventar.
+ *    Sin cifra confirmada, array vacío.
+ * 3. Subí las fotos a `public/gallery/<id>/01.jpg`, `02.jpg`… Mientras no estén,
+ *    cada imagen cae a un placeholder por su cuenta: se puede publicar un
+ *    proyecto y añadirle las fotos después. Ver `public/gallery/README.md`.
+ * 4. Con el array vacío, `Gallery` NO monta el carrusel: pinta un estado vacío y
+ *    CONSERVA su altura de capítulo. Eso último no es cosmético — la coreografía
+ *    3D está atada al scroll y el capítulo tiene que seguir midiendo sus 2
+ *    viewports o se descoloca todo lo que viene detrás.
+ *
+ * ⚠ MÍNIMO DE PROYECTOS PARA EL CARRUSEL: 5, y 8 para estar tranquilo.
+ *
+ * El carrusel es un anillo infinito por aritmética modular, no por clonado: sólo
+ * existe UN nodo por proyecto. Eso obliga a que una vuelta entera mida más que
+ * el viewport, o una misma tarjeta tendría que verse por los dos bordes a la vez.
+ * A 24rem de tarjeta + 2rem de hueco son ~416px por proyecto: 5 cubren 2080px
+ * (pantalla normal) y 8 cubren 3328px, que es el límite que asume `Gallery.tsx`.
+ * Con 2 o 3 proyectos aparece una costura en los extremos. Si el cliente sólo
+ * aporta tres, se cambia el carrusel por una retícula; no se publica torcido.
+ */
+export const GALLERY: readonly GalleryProject[] = []
+
+export const EVENTS = {
+  /** ⚠ Id TÉCNICO del mundo, no la marca. Ver la cabecera del archivo. */
   id: 'control',
-  name: 'Mood Control',
+  name: 'Mood Agency',
   kicker: 'División de experiencias en vivo',
   claim: 'Hacemos que la sala se caiga.',
+  /** Encabezado de sección con las palabras que la gente escribe en Google, no un claim. */
+  servicesHeading: 'Producción de eventos, DJs y festivales',
   intro:
     'Producción integral de eventos. Del primer boceto de escenario al último bis. Sonido, luz, imagen y una idea que lo sostiene todo.',
-  services: [
-    { n: '01', title: 'Organización de eventos', desc: 'Concepto, producción y dirección de principio a fin.' },
-    { n: '02', title: 'DJs & Booking', desc: 'Line-ups curados. Artistas que entienden el sitio y la hora.' },
-    { n: '03', title: 'Festivales', desc: 'Multi-escenario, logística, permisos y operación integral.' },
-    { n: '04', title: 'Producción audiovisual', desc: 'Aftermovies, contenido en vivo y visuales generativos.' },
-    { n: '05', title: 'Sonido profesional', desc: 'Diseño e ingeniería de PA. Presión sin fatiga.' },
-    { n: '06', title: 'Iluminación', desc: 'Diseño lumínico, timecode y programación al detalle.' },
-    { n: '07', title: 'Escenarios', desc: 'Estructura, rigging y escenografía a medida.' },
-    { n: '08', title: 'Branding para eventos', desc: 'Identidad que funciona en un cartel y en una pulsera.' },
-    { n: '09', title: 'Experiencias inmersivas', desc: 'Mapping, interacción y espacios que responden.' },
-  ],
+  services: EVENT_SERVICES,
+  /** Copy de la lista de servicios. */
+  servicesUI: {
+    /** Encabeza los artistas dentro del servicio de booking. */
+    rosterLabel: 'Roster',
+  },
+  gallery: GALLERY,
   /**
-   * PORTFOLIO.
-   *
-   * `images` apunta a `public/gallery/<id>/NN.jpg`. Los archivos todavía no
-   * existen: la galería tiene fallback a placeholder por imagen, así que el
-   * cliente puede ir subiendo fotos de a una sin romper nada ni tocar código.
-   * Ver `public/gallery/README.md`.
-   *
-   * `accent` decide qué neón de Control domina la tarjeta y su ficha. Es dato,
-   * no estilo: el componente lo traduce a un token, nunca a un hex.
-   */
-  gallery: [
-    {
-      id: 'g1',
-      title: 'Nocturna',
-      meta: 'Festival · 12.000 asistentes',
-      year: '2024',
-      client: 'Nocturna Festival',
-      location: 'Ciudad de las Artes, Valencia',
-      role: ['Dirección creativa', 'Producción integral', 'Diseño de sonido', 'Iluminación y timecode'],
-      description:
-        'Tres noches, dos escenarios y una sola idea: que la noche no se sintiera igual en ningún momento. Diseñamos el recorrido lumínico completo para que cada cambio de line-up leyera como un capítulo distinto. El cierre se programó al frame contra el amanecer.',
-      stats: [
-        { label: 'Asistentes', value: '12.000' },
-        { label: 'Escenarios', value: '2' },
-        { label: 'Noches', value: '3' },
-      ],
-      images: ['/gallery/g1/01.jpg', '/gallery/g1/02.jpg', '/gallery/g1/03.jpg'],
-      accent: 'violet',
-    },
-    {
-      id: 'g2',
-      title: 'Blackroom',
-      meta: 'Club series · 8 fechas',
-      year: '2023 — 2024',
-      client: 'Sala Blackroom',
-      location: 'Poblenou, Barcelona',
-      role: ['Concepto de serie', 'Booking y line-up', 'Escenografía', 'Visuales generativos'],
-      description:
-        'Ocho fechas con una única regla: nada de luz blanca. Construimos una serie de club donde el sonido manda y la imagen se le rinde. Cada fecha estrenó un visual generativo hecho a medida de ese line-up.',
-      stats: [
-        { label: 'Fechas', value: '8' },
-        { label: 'Artistas', value: '21' },
-        { label: 'Ocupación media', value: '96%' },
-      ],
-      images: ['/gallery/g2/01.jpg', '/gallery/g2/02.jpg', '/gallery/g2/03.jpg'],
-      accent: 'blue',
-    },
-    {
-      id: 'g3',
-      title: 'Solstice',
-      meta: 'Open air · Producción integral',
-      year: '2024',
-      client: 'Solstice Open Air',
-      location: 'Cabo de Gata, Almería',
-      role: ['Producción integral', 'Permisos y logística', 'Diseño de escenario', 'Sonido profesional'],
-      description:
-        'Un open air en mitad de un parque natural: cero infraestructura y cero excusas. Llevamos generación, agua, PA y estructura a un sitio donde no entraba un camión. Se montó y se desmontó sin dejar rastro.',
-      stats: [
-        { label: 'Asistentes', value: '4.500' },
-        { label: 'Montaje', value: '9 días' },
-        { label: 'Residuo neto', value: '0 kg' },
-      ],
-      images: ['/gallery/g3/01.jpg', '/gallery/g3/02.jpg', '/gallery/g3/03.jpg'],
-      accent: 'red',
-    },
-    {
-      id: 'g4',
-      title: 'Reactor',
-      meta: 'Mapping · Fachada 40m',
-      year: '2023',
-      client: 'Fundación Reactor',
-      location: 'Antiguo Matadero, Madrid',
-      role: ['Dirección creativa', 'Mapping arquitectónico', 'Producción audiovisual', 'Diseño sonoro'],
-      description:
-        'Cuarenta metros de fachada industrial convertidos en una máquina que respira. El mapping no decora el edificio: lo desarma y lo vuelve a montar tres veces por pase. Doce minutos, siete pases por noche, cuatro noches.',
-      stats: [
-        { label: 'Fachada', value: '40 m' },
-        { label: 'Proyectores', value: '14' },
-        { label: 'Pases', value: '28' },
-      ],
-      images: ['/gallery/g4/01.jpg', '/gallery/g4/02.jpg', '/gallery/g4/03.jpg'],
-      accent: 'blue',
-    },
-    {
-      id: 'g5',
-      title: 'Pulse',
-      meta: 'Corporate · Lanzamiento',
-      year: '2025',
-      client: 'Pulse Mobility',
-      location: 'Pabellón 8, IFEMA Madrid',
-      role: ['Dirección de evento', 'Escenografía', 'Contenido en vivo', 'Branding para eventos'],
-      description:
-        'Un lanzamiento de producto que no quería parecerse a una keynote. Cambiamos las filas de sillas por un recorrido: el público caminaba y el producto aparecía. La prensa salió con el titular que buscaba el cliente, sin que se lo dictáramos.',
-      stats: [
-        { label: 'Invitados', value: '800' },
-        { label: 'Impactos en prensa', value: '64' },
-        { label: 'Duración', value: '52 min' },
-      ],
-      images: ['/gallery/g5/01.jpg', '/gallery/g5/02.jpg', '/gallery/g5/03.jpg'],
-      accent: 'violet',
-    },
-    {
-      id: 'g6',
-      title: 'Neón Sur',
-      meta: 'Festival · 3 escenarios',
-      year: '2024',
-      client: 'Neón Sur',
-      location: 'Puerto de Málaga',
-      role: ['Producción integral', 'Booking', 'Diseño lumínico', 'Operación multi-escenario'],
-      description:
-        'Tres escenarios dentro de un puerto activo, con horarios de carga que no se negocian. Toda la programación se diseñó alrededor de esa restricción en vez de pelearse con ella. Los solapes se calcularon para que nunca compitiera un bombo con otro.',
-      stats: [
-        { label: 'Escenarios', value: '3' },
-        { label: 'Asistentes', value: '9.200' },
-        { label: 'Horas de show', value: '31' },
-      ],
-      images: ['/gallery/g6/01.jpg', '/gallery/g6/02.jpg', '/gallery/g6/03.jpg'],
-      accent: 'red',
-    },
-    {
-      id: 'g7',
-      title: 'Vórtice',
-      meta: 'Immersive · Instalación',
-      year: '2025',
-      client: 'Bienal Vórtice',
-      location: 'Nave 16, Zaragoza',
-      role: ['Concepto e instalación', 'Interacción y sensores', 'Diseño sonoro', 'Producción técnica'],
-      description:
-        'Una sala que reacciona a cuánta gente hay adentro. Vacía es un zumbido y una línea de luz; llena se vuelve un organismo. Nadie recibe instrucciones al entrar: la instalación se explica sola.',
-      stats: [
-        { label: 'Visitantes', value: '23.000' },
-        { label: 'Superficie', value: '640 m²' },
-        { label: 'Semanas en cartel', value: '11' },
-      ],
-      images: ['/gallery/g7/01.jpg', '/gallery/g7/02.jpg', '/gallery/g7/03.jpg'],
-      accent: 'violet',
-    },
-    {
-      id: 'g8',
-      title: 'Cierre',
-      meta: 'Aftermovie · Dirección',
-      year: '2024',
-      client: 'Mood Agency',
-      location: 'Rodaje en 5 ciudades',
-      role: ['Dirección', 'Producción audiovisual', 'Montaje y color', 'Diseño sonoro'],
-      description:
-        'El aftermovie de una temporada entera contada como si fuera una sola noche. Se rodó en cinco ciudades y se montó para que no se note ni una vez el corte entre ellas. Es la pieza que mejor explica qué hacemos cuando no podemos estar delante.',
-      stats: [
-        { label: 'Material bruto', value: '38 h' },
-        { label: 'Pieza final', value: '2:48' },
-        { label: 'Reproducciones', value: '1,4 M' },
-      ],
-      images: ['/gallery/g8/01.jpg', '/gallery/g8/02.jpg', '/gallery/g8/03.jpg'],
-      accent: 'blue',
-    },
-  ],
-  /**
-   * Copy de la UI de la galería (carrusel + ficha de proyecto).
+   * Copy de la UI de la galería (carrusel, ficha de proyecto y estado vacío).
    * Vive acá por la misma regla que el resto: en los `.tsx` no se escribe ni una
    * palabra, y las etiquetas de accesibilidad son texto de cara al usuario
    * tanto como un titular.
@@ -220,16 +265,25 @@ export const CONTROL = {
     /** Se muestra sobre el placeholder cuando la foto todavía no está subida. */
     pending: 'Imagen en producción',
     liveLabel: 'Proyecto en pantalla',
+    /** Lo que se ve mientras `GALLERY` esté vacío. Desaparece solo con el primer proyecto. */
+    empty: {
+      title: 'Portfolio en preparación',
+      body: 'Estamos montando la selección de proyectos. Si querés ver trabajo nuestro antes, escribinos y te lo enseñamos.',
+      cta: 'Escribinos',
+    },
   },
 } as const
 
-/* ──────────────────────────────  MOOD NET  ─────────────────────────────── */
+/* ────────  MOOD CREATIVE · división de tecnología (mundo id 'net')  ─────── */
 
-export const NET = {
+export const TECH = {
+  /** ⚠ Id TÉCNICO del mundo, no la marca. Ver la cabecera del archivo. */
   id: 'net',
-  name: 'Mood Net',
+  name: 'Mood Creative',
   kicker: 'División de tecnología y producto',
   claim: 'Construimos lo que tu negocio todavía no sabe pedir.',
+  /** Encabezado de sección con las palabras que la gente escribe en Google, no un claim. */
+  servicesHeading: 'Desarrollo web, aplicaciones e inteligencia artificial',
   intro:
     'Software a medida, web e inteligencia artificial. Sin plantillas, sin atajos y sin deuda técnica heredada el día uno.',
   services: [
@@ -351,16 +405,33 @@ export const METHOD = [
   { n: '04', title: 'Sostener', desc: 'Medimos, ajustamos y acompañamos. El lanzamiento es el principio.' },
 ] as const
 
-export const CLIENTS = [
-  'Nocturna', 'Vértice', 'Casa Ruido', 'Lumen', 'Norte', 'Abril',
-  'Kraken', 'Studio 9', 'Marea', 'Faro',
-] as const
+/**
+ * CLIENTES — VACÍO A PROPÓSITO.
+ *
+ * Acá había diez nombres (`Nocturna`, `Vértice`, `Casa Ruido`, `Lumen`, `Norte`,
+ * `Abril`, `Kraken`, `Studio 9`, `Marea`, `Faro`) inventados por una IA para
+ * maquetar el muro. Atribuirle clientes a una agencia real es peor todavía que
+ * la galería inventada: son terceros con nombre propio que nunca dieron permiso.
+ *
+ * Se rellena con los nombres REALES que confirme el cliente —y a poder ser con
+ * el visto bueno de cada uno para aparecer—. Mientras siga vacío, `Clients`
+ * pinta un estado vacío discreto y conserva su viewport de capítulo, que es lo
+ * que la coreografía 3D necesita para no descolocarse.
+ */
+export const CLIENTS: readonly string[] = []
+
+/** Copy del muro de clientes. Hoy sólo hace falta su estado vacío. */
+export const CLIENTS_UI = {
+  empty: 'Lista de clientes en preparación.',
+} as const
 
 /* ─────────────────────────────────  CTA  ───────────────────────────────── */
 
 export const CTA = {
   title: '¿En qué mood estás?',
   sub: 'Contanos qué querés hacer. Te respondemos con una idea, no con un formulario automático.',
+  /* ⚠ Los `id` son los TÉCNICOS ('control' = eventos, 'net' = tecnología): viajan
+     dentro del lead y los consume quien recibe el formulario. No son la marca. */
   divisions: [
     { id: 'control', label: 'Quiero producir un evento' },
     { id: 'net', label: 'Quiero desarrollo o tecnología' },
@@ -390,6 +461,28 @@ export const FORM = {
   success: 'Recibido. Te respondemos con una idea, no con una plantilla.',
 } as const
 
+/**
+ * Qué se le dice a quien acaba de intentar mandar su mensaje y no salió.
+ *
+ * Una clave por cada motivo de fallo de `submitLead()`. La cerradura vive del
+ * otro lado: `FAILURE_MESSAGES` está anotado como `Record<LeadFailure, string>`,
+ * así que el día que se añada un motivo nuevo el proyecto deja de compilar hasta
+ * que alguien escriba su frase ACÁ. Sin eso, el motivo nuevo llegaría a
+ * producción como `undefined` debajo del formulario.
+ *
+ * Regla de redacción: nada de "algo salió mal". Quien lee esto acaba de escribir
+ * tres párrafos y quiere saber dos cosas — si se perdieron y qué hacer ahora.
+ */
+export const SUBMIT_FEEDBACK = {
+  errors: {
+    network: 'No llegamos al servidor. Mirá tu conexión y volvé a darle: no perdiste lo escrito.',
+    server: 'Se cayó de nuestro lado, no del tuyo. Probá en un minuto o escribinos directo al email.',
+    rejected: 'El envío no se aceptó. Revisá el email y volvé a intentarlo.',
+    timeout: 'Está tardando demasiado. Volvé a darle y, si sigue igual, escribinos al email.',
+    aborted: 'Se canceló el envío. Cuando quieras, le damos de nuevo.',
+  },
+} as const
+
 /* ────────────────────────────────  APAGÓN  ─────────────────────────────── */
 
 /** Las dos líneas del blackout: el corte narrativo entre las dos divisiones. */
@@ -398,11 +491,15 @@ export const BLACKOUT = {
 } as const
 
 export const FOOTER = {
-  legal: `© ${new Date().getFullYear()} Mood Agency`,
+  legal: `© ${new Date().getFullYear()} ${BRAND.name}`,
+  /**
+   * Sólo enlaces que EXISTEN. Los perfiles sociales salen de `SITE.social`, que
+   * hoy está vacío: hasta que el cliente pase las URLs reales el pie muestra
+   * únicamente el email. Un `href="#"` con la etiqueta "Instagram" es un enlace
+   * que miente, y éste es justo el proyecto donde eso no vuelve a pasar.
+   */
   links: [
-    { label: 'Instagram', href: '#' },
-    { label: 'LinkedIn', href: '#' },
-    { label: 'Behance', href: '#' },
-    { label: 'hola@moodagency.com', href: 'mailto:hola@moodagency.com' },
+    ...SITE.social,
+    { label: SITE.email, href: `mailto:${SITE.email}` },
   ],
 } as const

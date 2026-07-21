@@ -1,4 +1,4 @@
-import { AGENCY, FOOTER } from '@/content'
+import { BRAND, FOOTER } from '@/content'
 import { ChapterSection } from './ChapterSection'
 import { INK, alpha } from './_tokens'
 
@@ -30,10 +30,14 @@ export function Footer(): React.JSX.Element {
           <ul className="flex flex-wrap items-center gap-x-6 gap-y-2">
             {FOOTER.links.map((link) => (
               <li key={link.label}>
+                {/* `inline-flex` + `min-h-11`: en `type-label` la caja de un
+                    enlace mide 15px de alto. Es tabulable y clicable con ratón,
+                    pero con el dedo es una lotería. El alto mínimo táctil se
+                    consigue con la caja, no con el cuerpo del texto. */}
                 <a
                   href={link.href}
                   data-cursor="hover"
-                  className="type-label inline-block transition-colors duration-300 hover:text-[var(--world-accent)]"
+                  className="type-label inline-flex min-h-11 items-center transition-colors duration-300 hover:text-[var(--world-accent)]"
                 >
                   {link.label}
                 </a>
@@ -43,7 +47,7 @@ export function Footer(): React.JSX.Element {
         </nav>
 
         <p className="type-label" style={{ color: alpha(INK, 28) }}>
-          {AGENCY.tagline}
+          {BRAND.tagline}
         </p>
       </div>
     </ChapterSection>

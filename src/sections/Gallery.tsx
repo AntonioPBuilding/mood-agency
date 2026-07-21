@@ -7,7 +7,7 @@ import type {
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
 } from 'react'
-import { CONTROL } from '@/content'
+import { EVENTS } from '@/content'
 import { setOverlay } from '@/core/overlayStore'
 import { getQuality } from '@/core/quality'
 import { subscribeChapter } from '@/core/scrollStore'
@@ -30,9 +30,15 @@ import {
  * EL ANILLO (lo que hay que entender antes de tocar nada)
  *
  * El carrusel no tiene bordes. No hay tope izquierdo ni derecho, no hay clamp y
- * no hay rebote: al pasar de la 08 se sigue avanzando HACIA ADELANTE y la 01
- * vuelve a entrar por la derecha. Se consigue con aritmética modular, no con
- * clones en el DOM: hay 8 `<li>` y nada más que 8.
+ * no hay rebote: al pasar de la última se sigue avanzando HACIA ADELANTE y la
+ * primera vuelve a entrar por la derecha. Se consigue con aritmética modular, no
+ * con clones en el DOM: hay un `<li>` por proyecto y ni uno más.
+ *
+ * ⚠ HOY `EVENTS.gallery` ESTÁ VACÍO (las fichas que había eran inventadas; ver
+ * `@/content`), así que lo que se monta es `GalleryEmpty` y nada de este archivo
+ * llega a ejecutarse. El carrusel se queda entero y tipado a la espera del
+ * contenido real. Antes de rellenarlo, leé el mínimo de proyectos que exige el
+ * anillo —5, y 8 para estar tranquilo— documentado sobre `GALLERY`.
  *
  * El truco es que NO se mueve el track, se mueve CADA TARJETA. Para la tarjeta
  * `i` se calcula su desplazamiento respecto al centro del viewport y se envuelve
@@ -76,8 +82,8 @@ import {
  */
 
 const META = chapterMeta('gallery')
-const ITEMS = CONTROL.gallery
-const UI = CONTROL.galleryUI
+const ITEMS = EVENTS.gallery
+const UI = EVENTS.galleryUI
 
 type GalleryItem = (typeof ITEMS)[number]
 type Accent = GalleryItem['accent']
@@ -390,7 +396,13 @@ function ProjectDialog({ item, onClose }: ProjectDialogProps): React.JSX.Element
         initial={{ opacity: 0, y: reduced ? 0 : 32 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: reduced ? 0 : 0.55, ease: EASE }}
-        className="relative flex max-h-[94vh] w-full max-w-[74rem] flex-col overflow-y-auto overscroll-contain outline-none sm:max-h-[88vh]"
+        /* `dvh` acá SÍ, y es el único sitio de la landing donde corresponde: el
+           panel es `fixed`, no forma parte del alto del documento, así que
+           seguir el viewport en vivo no puede desplazar el progreso de scroll
+           de nadie. Con `vh` el 94% se medía contra el viewport GRANDE y en
+           móvil el pie de la ficha —las estadísticas— quedaba debajo de la
+           barra de direcciones, sin manera de llegar a él. */
+        className="relative flex max-h-[94dvh] w-full max-w-[74rem] flex-col overflow-y-auto overscroll-contain outline-none sm:max-h-[88dvh]"
         // Panel OPACO: es el arreglo central de esta sección. Detrás hay 45.000
         // partículas y no pueden leerse a través de la ficha.
         // El halo era `0 0 100px`: una sombra de 100px de radio alrededor de un
@@ -415,7 +427,7 @@ function ProjectDialog({ item, onClose }: ProjectDialogProps): React.JSX.Element
             onClick={onClose}
             aria-label={UI.close}
             data-cursor="hover"
-            className="grid size-9 shrink-0 place-items-center transition-colors duration-300"
+            className="grid size-11 shrink-0 place-items-center transition-colors duration-300"
             style={{ border: `1px solid ${alpha(INK, 20)}`, color: INK }}
           >
             <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">
@@ -465,7 +477,7 @@ function ProjectDialog({ item, onClose }: ProjectDialogProps): React.JSX.Element
                   data-cursor="hover"
                   aria-label={UI.prevImage}
                   onClick={() => setShot((s) => (s - 1 + images.length) % images.length)}
-                  className="grid size-9 shrink-0 place-items-center"
+                  className="grid size-11 shrink-0 place-items-center"
                   style={{ border: `1px solid ${alpha(INK, 20)}`, color: INK }}
                 >
                   <Chevron dir="left" />
@@ -475,7 +487,7 @@ function ProjectDialog({ item, onClose }: ProjectDialogProps): React.JSX.Element
                   data-cursor="hover"
                   aria-label={UI.nextImage}
                   onClick={() => setShot((s) => (s + 1) % images.length)}
-                  className="grid size-9 shrink-0 place-items-center"
+                  className="grid size-11 shrink-0 place-items-center"
                   style={{ border: `1px solid ${alpha(INK, 20)}`, color: INK }}
                 >
                   <Chevron dir="right" />
@@ -490,7 +502,7 @@ function ProjectDialog({ item, onClose }: ProjectDialogProps): React.JSX.Element
                         aria-label={`${UI.goToImage}${UI.sep}${pad(i + 1)}`}
                         aria-current={i === shot ? 'true' : undefined}
                         onClick={() => setShot(i)}
-                        className="type-label px-2 py-1 transition-opacity duration-300"
+                        className="type-label grid size-11 place-items-center transition-opacity duration-300"
                         style={{
                           color: i === shot ? accent : alpha(INK, 45),
                           border: `1px solid ${i === shot ? alpha(accent, 55) : alpha(INK, 14)}`,
@@ -571,14 +583,22 @@ function ProjectDialog({ item, onClose }: ProjectDialogProps): React.JSX.Element
               <h4 className="type-label" style={{ color: alpha(INK, 35) }}>
                 {UI.statsLabel}
               </h4>
-              <dl className="grid grid-cols-3 gap-3">
+              {/* Dos columnas hasta `sm`, tres a partir de ahí. A 375px la
+                  tercera parte útil de la ficha son ~90px, y una etiqueta como
+                  "Reproducciones" mide 126px en `type-label` (mono + 0.22em de
+                  tracking): al ser UNA sola palabra no puede partirse, así que
+                  la celda no encoge y el `dl` desbordaba la ficha entera. Con
+                  dos columnas la celda pasa a 141px y entra la más larga. */}
+              <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {item.stats.map((s) => (
                   <div
                     key={s.label}
                     // `flex-col-reverse`: en el DOM va `dt` y después `dd`
                     // —que es el único orden válido dentro de un `dl`— pero en
                     // pantalla la cifra manda y va arriba.
-                    className="flex flex-col-reverse gap-1 pt-3"
+                    // `min-w-0`: sin esto una celda de grid se niega a bajar del
+                    // ancho de su contenido (`min-width: auto`) y desborda.
+                    className="flex min-w-0 flex-col-reverse gap-1 pt-3"
                     style={{ borderTop: `1px solid ${alpha(INK, 14)}` }}
                   >
                     <dt className="type-label" style={{ color: alpha(INK, 40) }}>
@@ -647,7 +667,66 @@ interface Painted {
   o: string
 }
 
+/**
+ * ESTADO VACÍO — lo que se ve mientras `EVENTS.gallery` no tenga proyectos.
+ *
+ * Se renderiza en lugar del carrusel, no encima ni además: montar un anillo
+ * infinito de cero tarjetas es pedirle a `measure()` que divida por un ciclo de
+ * ancho 0 y encender un ticker para no pintar nada.
+ *
+ * ⚠ LO QUE NO SE PUEDE HACER ES NO RENDERIZAR LA SECCIÓN. Toda la coreografía 3D
+ * es scroll-linked contra `CHAPTER_MAP`: `gallery` mide 2 viewports y el Núcleo
+ * cuenta con ellos. Si el capítulo desaparece del documento, el resto de la
+ * landing se adelanta dos viewports respecto de la escena y se descoloca desde
+ * acá hasta el footer. Por eso sigue siendo un `ChapterSection` con su id: la
+ * altura la pone la carcasa, no el contenido.
+ *
+ * Y no es un "próximamente" de relleno: lleva salida al formulario. Si no hay
+ * portfolio que enseñar, lo segundo mejor es abrir una conversación.
+ */
+function GalleryEmpty(): React.JSX.Element {
+  return (
+    <ChapterSection id="gallery" innerClassName="justify-center gap-[3vh] px-5 md:px-10">
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="type-label" style={{ color: CONTROL_VIOLET }}>
+          {EVENTS.name}
+        </p>
+        <p className="type-label shrink-0" style={{ color: alpha(INK, 35) }}>
+          {META.index}
+        </p>
+      </div>
+
+      <div className="flex max-w-[46ch] flex-col gap-5">
+        <h2 className="type-huge max-w-[16ch] uppercase">{UI.empty.title}</h2>
+        <p className="text-lead text-balance" style={{ color: alpha(INK, 62) }}>
+          {UI.empty.body}
+        </p>
+        <a
+          href="#chapter-converge"
+          data-cursor="cta"
+          data-cursor-label={UI.empty.cta}
+          className="type-label inline-flex min-h-11 items-center self-start px-5 transition-colors duration-300"
+          style={{ border: `1px solid ${alpha(CONTROL_VIOLET, 45)}`, color: CONTROL_VIOLET }}
+        >
+          {UI.empty.cta}
+        </a>
+      </div>
+    </ChapterSection>
+  )
+}
+
+/**
+ * GALERÍA — decide qué versión del capítulo se monta.
+ *
+ * `ITEMS` es una constante de módulo, así que esta rama se resuelve una vez y no
+ * cambia en toda la sesión: no hay hooks condicionales por ningún lado, cada
+ * componente monta con su propio conjunto completo.
+ */
 export function Gallery(): React.JSX.Element {
+  return ITEMS.length === 0 ? <GalleryEmpty /> : <GalleryCarousel />
+}
+
+function GalleryCarousel(): React.JSX.Element {
   const labelId = useId()
   const viewportRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLUListElement>(null)
@@ -1088,7 +1167,7 @@ export function Gallery(): React.JSX.Element {
     <ChapterSection id="gallery" innerClassName="justify-center gap-[2.5vh]">
       <div className="flex items-baseline justify-between gap-4 px-5 md:px-10">
         <h2 className="type-label" id={labelId} style={{ color: CONTROL_VIOLET }}>
-          {CONTROL.name}
+          {EVENTS.name}
         </h2>
         <p className="type-label shrink-0" style={{ color: alpha(INK, 35) }}>
           {META.index}
@@ -1112,7 +1191,7 @@ export function Gallery(): React.JSX.Element {
         onBlur={onFocusOut}
         // `pan-y`: el navegador se queda el scroll vertical, nosotros el horizontal.
         style={{ touchAction: 'pan-y' }}
-        className="relative h-[56vh] w-full select-none md:h-[62vh]"
+        className="relative h-[56svh] w-full select-none md:h-[62svh]"
       >
         {/* El track ya NO se transforma: es sólo el layout de referencia del que
             se leen los centros. Lo que se mueve es cada `<li>`. */}
@@ -1140,9 +1219,13 @@ export function Gallery(): React.JSX.Element {
                 // misma tarjeta tendría que verse por los dos bordes a la vez,
                 // y sólo hay un nodo por tarjeta. Con 8×(24rem+2rem)=3328px la
                 // vuelta aguanta hasta 3200px de ancho; por encima (ultrawide,
-                // 4K) las tarjetas crecen a 30rem y la vuelta pasa a 4096px. Si
-                // algún día se quitan proyectos de `content.ts`, hay que rehacer
-                // esta cuenta o aparecerá una costura en los extremos.
+                // 4K) las tarjetas crecen a 30rem y la vuelta pasa a 4096px.
+                //
+                // ⚠ ESTA CUENTA DEPENDE DEL NÚMERO DE PROYECTOS, y el array está
+                // vacío esperando los reales. Son ~416px por proyecto: con menos
+                // de 5 la vuelta no cubre una pantalla normal y aparece una
+                // costura en los extremos. Ver el bloque de `GALLERY` en
+                // `@/content` antes de publicar tres proyectos y confiar.
                 className="gpu relative aspect-[4/5] max-h-full w-[70vw] shrink-0 overflow-hidden sm:w-[44vw] md:w-[34vw] lg:w-[24rem] min-[3200px]:w-[30rem]"
                 style={{
                   // OPACA. Éste es el arreglo: sin esto se ven las partículas
@@ -1233,7 +1316,7 @@ export function Gallery(): React.JSX.Element {
             // `stepTo` y no `goTo(active - 1)`: retrocede SIEMPRE, también desde
             // la 01, donde entra la 08 por la izquierda.
             onClick={() => stepTo(-1)}
-            className="grid size-9 place-items-center transition-colors duration-300"
+            className="grid size-11 place-items-center transition-colors duration-300"
             style={{ border: `1px solid ${alpha(INK, 20)}`, color: INK }}
           >
             <Chevron dir="left" />
@@ -1245,14 +1328,24 @@ export function Gallery(): React.JSX.Element {
             // Avanza SIEMPRE hacia adelante: desde la 08 sigue de largo y entra
             // la 01 por la derecha. Nunca se queda muerto.
             onClick={() => stepTo(1)}
-            className="grid size-9 place-items-center transition-colors duration-300"
+            className="grid size-11 place-items-center transition-colors duration-300"
             style={{ border: `1px solid ${alpha(INK, 20)}`, color: INK }}
           >
             <Chevron dir="right" />
           </button>
         </div>
 
-        <ul className="flex items-center gap-1.5">
+        {/* ÁREA TÁCTIL DE LOS PUNTOS.
+            El punto sigue midiendo 6px: lo que crece es la caja que lo caza,
+            que antes eran 20×20 —menos de la mitad del mínimo táctil— y ahora
+            son 40×40 en móvil y 44×44 desde `sm`.
+
+            Los 40 de móvil no son pereza, es aritmética: ocho objetivos de
+            44px son 352px, y a 375px de ancho con los 20px de medianil a cada
+            lado sólo quedan 335. Cuarenta es el máximo que entra sin que la
+            fila desborde ni haya que esconder controles. `flex-wrap` es el
+            seguro por si algún día se añade un noveno proyecto. */}
+        <ul className="flex flex-wrap items-center gap-0 sm:gap-1.5">
           {ITEMS.map((item, i) => (
             <li key={item.id} className="flex">
               <button
@@ -1261,7 +1354,7 @@ export function Gallery(): React.JSX.Element {
                 aria-label={`${UI.goTo}${UI.sep}${item.title}`}
                 aria-current={i === active ? 'true' : undefined}
                 onClick={() => goTo(i)}
-                className="grid size-5 place-items-center"
+                className="grid size-10 place-items-center sm:size-11"
               >
                 {/* Sólo se anima `transform`: el punto activo se ESCALA, no
                     cambia de tamaño de caja. */}

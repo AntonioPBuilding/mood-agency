@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mood Control — sitemap.
+
+  Una sola URL, la misma que declara `<link rel="canonical">` en index.html y
+  `SITE.url` en src/content.ts. Las tres tienen que decir exactamente lo mismo,
+  barra final incluida: una discrepancia acá es una señal contradictoria y el
+  buscador elige por su cuenta cuál indexa.
+
+  `lastmod` se actualiza a mano cuando cambie el contenido de la página. Es el
+  precio de servir un archivo estático; mentir con una fecha automática que no
+  corresponde a un cambio real es peor que no tener el campo.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://moodcontrol.es/</loc>
+    <lastmod>2026-07-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

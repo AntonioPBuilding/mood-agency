@@ -1,10 +1,10 @@
-import { NET } from '@/content'
+import { TECH } from '@/content'
 import { DecodeText } from '@/ui'
 import { ChapterSection } from './ChapterSection'
 import { INK, NET_CYAN, NET_GREY, alpha, chapterMeta } from './_tokens'
 
 /**
- * MOOD NET — la otra voz.
+ * MOOD CREATIVE (capítulo `netIntro`) — la otra voz.
  *
  * Después del apagón todo cambia de temperatura: retícula, líneas de 1px,
  * etiquetas en mono y cero neón. La contención ES el mensaje; si esta sección
@@ -26,7 +26,7 @@ export function NetIntro(): React.JSX.Element {
   return (
     <ChapterSection
       id="netIntro"
-      ariaLabel={NET.name}
+      ariaLabel={TECH.name}
       innerClassName="justify-between px-5 py-8 md:px-10 md:py-12"
     >
       {/* Retícula estática: sólo pinta, no anima. Es fondo, no efecto. */}
@@ -47,7 +47,7 @@ export function NetIntro(): React.JSX.Element {
         style={{ borderColor: alpha(NET_GREY, 30) }}
       >
         <p className="type-label" style={{ color: NET_CYAN }}>
-          {NET.kicker}
+          {TECH.kicker}
         </p>
         <p className="type-label shrink-0" style={{ color: alpha(INK, 40) }}>
           {META.index}
@@ -56,7 +56,7 @@ export function NetIntro(): React.JSX.Element {
 
       <div className="relative flex flex-1 flex-col justify-center gap-6">
         <h2 className="type-giga uppercase">
-          <DecodeText duration={1.6}>{NET.name}</DecodeText>
+          <DecodeText duration={1.6}>{TECH.name}</DecodeText>
         </h2>
         <p className="type-label" style={{ color: alpha(NET_CYAN, 70) }}>
           {META.span}
@@ -68,7 +68,7 @@ export function NetIntro(): React.JSX.Element {
         style={{ borderColor: alpha(NET_GREY, 30) }}
       >
         <p className="text-lead max-w-[44ch] leading-snug" style={{ color: alpha(INK, 72) }}>
-          {NET.intro}
+          {TECH.intro}
         </p>
       </footer>
     </ChapterSection>

@@ -3,24 +3,73 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <title>Mood Agency — Creamos estados de ánimo</title>
-    <meta
-      name="description"
-      content="Mood Agency es una agencia creativa con dos almas: Mood Control, producción de eventos, DJs y experiencias inmersivas. Mood Net, desarrollo web, IA y software a medida."
-    />
+    <!-- Esta landing sólo existe en oscuro. Declararlo evita que el navegador
+         pinte de blanco sus propios controles (inputs, scrollbars, autofill)
+         sobre un fondo #050505, que es lo que delata a un sitio "oscuro"
+         pintado a mano en vez de diseñado en oscuro. -->
+    <meta name="color-scheme" content="dark" />
+    <!-- Lo reescribe `useWorldSync` con el mundo activo: la barra del navegador
+         en móvil viaja de VOID al mundo de eventos y al de tecnología con la
+         página. Los mundos se llaman 'control' y 'net' en el código; las marcas
+         son Mood Agency y Mood Creative. Ver la cabecera de `src/content.ts`. -->
     <meta name="theme-color" content="#050505" />
 
-    <!-- Open Graph -->
+    <!-- Marca. `favicon.svg` lleva esquinas redondeadas (se ve en una pestaña);
+         `icon.svg` va a plena sangre porque iOS y Android aplican su máscara. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- ⚠ TODO LO DE ESTE BLOQUE ES UNA COPIA DE `SITE` (src/content.ts).
+         `index.html` es estático y no puede importar un módulo, pero los
+         rastreadores sociales no ejecutan JavaScript: si estas etiquetas no
+         están en el HTML servido, la previsualización sale vacía. Por eso se
+         duplican, y por eso `injectStructuredData()` compara las dos fuentes en
+         desarrollo y grita por consola en cuanto divergen.
+         Regla: se edita `SITE` primero, y después se replica ACÁ. -->
+    <title>Mood Control — Eventos, DJs y desarrollo web en Utrera, Sevilla</title>
+    <meta
+      name="description"
+      content="Mood Control, desde Utrera (Sevilla): Mood Agency produce eventos, DJs y festivales; Mood Creative desarrolla web, inteligencia artificial y software a medida."
+    />
+    <link rel="canonical" href="https://moodcontrol.es/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+
+    <!-- Open Graph. Las URLs de imagen van ABSOLUTAS: los rastreadores sociales
+         no resuelven rutas relativas y una `/og.png` a secas se previsualiza
+         vacía en la mitad de las plataformas. -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Mood Agency — Creamos estados de ánimo" />
+    <meta property="og:site_name" content="Mood Control" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:url" content="https://moodcontrol.es/" />
+    <meta property="og:title" content="Mood Control — Eventos, DJs y desarrollo web en Utrera, Sevilla" />
     <meta
       property="og:description"
-      content="Eventos, DJs y experiencias inmersivas. Desarrollo web, IA y software a medida. Dos divisiones, un mismo estándar."
+      content="Dos divisiones, un mismo estándar. Mood Agency: producción de eventos, DJs y experiencias. Mood Creative: desarrollo web, IA y software a medida."
     />
-    <meta property="og:image" content="/og.jpg" />
+    <meta property="og:image" content="https://moodcontrol.es/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Mood Control — Creamos estados de ánimo. Eventos con Mood Agency, tecnología e IA con Mood Creative."
+    />
+
+    <!-- Twitter/X lee casi todo de Open Graph, pero `card` y `image:alt` son
+         suyos: sin `card` no hay imagen grande, sólo un enlace de texto. -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Mood Control — Eventos, DJs y desarrollo web en Utrera, Sevilla" />
+    <meta
+      name="twitter:description"
+      content="Dos divisiones, un mismo estándar. Mood Agency: producción de eventos, DJs y experiencias. Mood Creative: desarrollo web, IA y software a medida."
+    />
+    <meta name="twitter:image" content="https://moodcontrol.es/og.png" />
+    <meta
+      name="twitter:image:alt"
+      content="Mood Control — Creamos estados de ánimo. Eventos con Mood Agency, tecnología e IA con Mood Creative."
+    />
 
     <!-- Tipografía variable. preconnect antes del stylesheet: ahorra ~300ms de
          handshake en el primer render, que en el Hero se nota. -->
@@ -31,21 +80,54 @@
       rel="stylesheet"
     />
 
-    <script type="application/ld+json">
+    <!-- JSON-LD MÍNIMO, a propósito.
+         Esto es el suelo: lo que lee un rastreador que no ejecuta JavaScript.
+         `src/ui/structuredData.ts` lo SUSTITUYE al arrancar la app por el grafo
+         completo —la marca madre con su dirección, las dos divisiones, sus 17
+         servicios y el contacto— generado desde `src/content.ts`, que es la
+         única fuente de verdad del copy.
+         Mantené este bloque corto: todo lo que se duplique acá es una copia que
+         nadie va a actualizar. -->
+    <script type="application/ld+json" id="ld-json">
       {
         "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Mood Agency",
-        "description": "Agencia creativa: producción de eventos y desarrollo tecnológico.",
+        "@type": "ProfessionalService",
+        "name": "Mood Control",
+        "url": "https://moodcontrol.es/",
+        "description": "Producción de eventos y desarrollo tecnológico desde Utrera, Sevilla.",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Utrera",
+          "addressRegion": "Sevilla",
+          "addressCountry": "ES"
+        },
         "department": [
-          { "@type": "Organization", "name": "Mood Control" },
-          { "@type": "Organization", "name": "Mood Net" }
+          { "@type": "Organization", "name": "Mood Agency" },
+          { "@type": "Organization", "name": "Mood Creative" }
         ]
       }
     </script>
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Sin JavaScript no hay landing: es una experiencia 3D atada al scroll.
+         Pero "no hay landing" no puede significar una página en blanco de una
+         agencia que vende dirección creativa. Lo mínimo indispensable —quiénes
+         somos y por dónde escribirnos— en HTML plano.
+         Único copy del proyecto que NO sale de `src/content.ts`, y no puede:
+         un `<noscript>` no ejecuta módulos. Si cambian los textos de la empresa,
+         revisá también estas seis líneas. -->
+    <noscript>
+      <div style="max-width: 46rem; margin: 0 auto; padding: 4rem 1.5rem; color: #f2f0eb; font-family: system-ui, sans-serif; line-height: 1.5">
+        <h1 style="font-size: 2.5rem; line-height: 1.05; margin: 0 0 1.5rem">Mood Control</h1>
+        <p style="font-size: 1.25rem; margin: 0 0 2rem">Creamos estados de ánimo. Utrera, Sevilla.</p>
+        <p style="margin: 0 0 0.75rem"><strong style="color: #b026ff">Mood Agency</strong> — Producción de eventos, DJs, festivales y experiencias inmersivas.</p>
+        <p style="margin: 0 0 2rem"><strong style="color: #00e5ff">Mood Creative</strong> — Desarrollo web, aplicaciones, inteligencia artificial y software a medida.</p>
+        <p style="margin: 0">Esta web necesita JavaScript para funcionar. Mientras tanto, escribinos a <a href="mailto:hola@moodcontrol.es" style="color: #00e5ff">hola@moodcontrol.es</a>.</p>
+      </div>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

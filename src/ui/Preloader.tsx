@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { getQuality } from '@/core/quality'
 import { PRELOADER_COPY } from './uiCopy'
@@ -24,6 +24,19 @@ interface PreloaderProps {
 /** Alturas de las líneas que barren la pantalla, en % del viewport. */
 const SWEEPS = [16, 37, 63, 84] as const
 
+/**
+ * TECHO ABSOLUTO del preloader. El timeline normal dura ~6,3s (y ~2,5s con
+ * `prefers-reduced-motion`), así que a los 12 segundos ya no estamos esperando
+ * a nada: estamos colgados.
+ *
+ * Esta pantalla es OPACA y bloquea el scroll del documento. Si `onComplete` no
+ * se llama —porque un ref llegó nulo, porque GSAP no cargó, porque una
+ * extensión rompió el `clipPath`— el usuario no ve "una web sin animación": ve
+ * un rectángulo negro del que no se puede salir, y se va. No hay ningún estado
+ * de esta página que justifique quedarse acá para siempre.
+ */
+const WATCHDOG_MS = 12_000
+
 export function Preloader({ onComplete }: PreloaderProps): React.JSX.Element {
   const rootRef = useRef<HTMLDivElement>(null)
   const counterRef = useRef<HTMLSpanElement>(null)
@@ -35,6 +48,40 @@ export function Preloader({ onComplete }: PreloaderProps): React.JSX.Element {
   useEffect(() => {
     onCompleteRef.current = onComplete
   })
+
+  /**
+   * Salida única. El timeline y el watchdog pueden llegar los dos; el segundo
+   * en llegar no tiene que hacer nada. Sin este cerrojo, `setReady(true)` dos
+   * veces es inocuo hoy pero deja de serlo en cuanto `onComplete` haga algo
+   * más que cambiar un booleano.
+   */
+  const doneRef = useRef(false)
+  const finish = useCallback(() => {
+    if (doneRef.current) return
+    doneRef.current = true
+    onCompleteRef.current()
+  }, [])
+
+  useEffect(() => {
+    let timer = 0
+
+    const arm = () => {
+      timer = window.setTimeout(() => {
+        // Con la pestaña de fondo el rAF no corre y GSAP no avanza: el timeline
+        // no está colgado, está esperando. Rearmamos en vez de robarle la
+        // narrativa a alguien que todavía no ha mirado la página.
+        if (document.hidden) {
+          arm()
+          return
+        }
+        console.warn('[mood] El preloader no terminó a tiempo: se abre la página igual.')
+        finish()
+      }, WATCHDOG_MS)
+    }
+
+    arm()
+    return () => window.clearTimeout(timer)
+  }, [finish])
 
   // Mientras el preloader esté montado el documento no se mueve. Se restaura al
   // desmontar, incluso si el timeline se interrumpe a mitad.
@@ -57,6 +104,8 @@ export function Preloader({ onComplete }: PreloaderProps): React.JSX.Element {
     const root = rootRef.current
     const counter = counterRef.current
     const enter = enterRef.current
+    // Sin nodos no hay animación posible. No se sale en silencio: el watchdog
+    // ya está armado y abrirá la página igual.
     if (!root || !counter || !enter) return
 
     const reduced = getQuality().reduced
@@ -114,12 +163,12 @@ export function Preloader({ onComplete }: PreloaderProps): React.JSX.Element {
           clipPath: 'inset(0% 0% 100% 0%)',
           duration: reduced ? 0.4 : 1,
           ease: 'expo.inOut',
-          onComplete: () => onCompleteRef.current(),
+          onComplete: finish,
         })
     }, root)
 
     return () => ctx.revert()
-  }, [])
+  }, [finish])
 
   return (
     <div

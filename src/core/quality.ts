@@ -34,7 +34,7 @@ export interface QualityBudget {
   postFx: boolean
   /** ¿Sombras en tiempo real? */
   shadows: boolean
-  /** Muestras de la niebla volumétrica de Mood Control. */
+  /** Muestras de la niebla volumétrica de Mood Agency. */
   volumetricSteps: number
   /** El usuario pidió menos movimiento: la historia se cuenta igual, quieta. */
   reduced: boolean
@@ -102,7 +102,7 @@ const BUDGETS: Record<Tier, Omit<QualityBudget, 'tier' | 'reduced' | 'dpr'>> = {
      * Estaba en `false` por prudencia, y el efecto secundario era brutal: la
      * identidad de los tres mundos NO vive en el fondo (los tres son negro y se
      * diferencian menos de un 4%), vive en el bloom. Sin post-fx, en móvil
-     * Mood Control y Mood Net se ven idénticos y la narrativa desaparece.
+     * Mood Agency y Mood Creative se ven idénticos y la narrativa desaparece.
      *
      * Ahora es asumible: con el presupuesto de píxeles, `low` pinta 1,1M de
      * fragmentos, y el bloom a media resolución son 275k. En este tier

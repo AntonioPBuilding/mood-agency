@@ -172,7 +172,7 @@ function PostFx() {
   const fx = useMemo(() => {
     const bloom = new BloomEffect({
       intensity: 0.35,
-      // Umbral bajo: en Mood Control queremos que florezca casi todo. Los
+      // Umbral bajo: en Mood Agency queremos que florezca casi todo. Los
       // neones de un club no tienen "highlights", son highlight de punta a
       // punta.
       luminanceThreshold: 0.2,
@@ -198,7 +198,7 @@ function PostFx() {
     })
 
     // El EffectComposer pone `gl.toneMapping = NoToneMapping` mientras está
-    // montado. Sin este efecto, los neones de Mood Control saldrían recortados
+    // montado. Sin este efecto, los neones de Mood Agency saldrían recortados
     // a blanco puro en cuanto pasen de 1.0.
     const tone = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC })
 
@@ -273,7 +273,7 @@ function PostFx() {
     fx.chroma.offset.set(chromaAmount, chromaAmount * 0.6)
 
     /* Viñeta: se cierra en el show (foco de sala) y en el colapso final
-       (túnel), y se abre en Mood Net, donde queremos luz plana y honesta. */
+       (túnel), y se abre en Mood Creative, donde queremos luz plana y honesta. */
     const show = range(p, 0.235, 0.28) * (1 - range(p, 0.5, 0.55))
     const collapse = range(p, 0.92, 0.99)
     fx.vignette.darkness = 0.45 + show * 0.35 + collapse * 0.4

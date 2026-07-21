@@ -1,12 +1,12 @@
 /**
- * ESTADO 4 · MOOD CONTROL — el show.
+ * ESTADO 4 · MUNDO 'control' = EVENTOS (marca Mood Agency) — el show.
  *
  * Láseres que barren, focos que giran, humo que no se está quieto y un apagón
  * que corta la corriente. Todo dirigido por el scroll salvo el latido, que es
  * lo único que tiene derecho a existir por su cuenta: un show no deja de sonar
  * porque el público se quede quieto.
  *
- * SOBRE LAS LUCES REALES: no hay ni una. Durante Mood Control lo único en
+ * SOBRE LAS LUCES REALES: no hay ni una. Durante Mood Agency lo único en
  * pantalla son partículas y haces, y ambos usan ShaderMaterial crudo —material
  * sin iluminar—. Un `spotLight` acá sería una luz que no ilumina nada y que
  * igual paga su coste en cada programa. Lo que el ojo lee como "foco" es el
@@ -209,7 +209,7 @@ export function Lasers() {
     gfx.smokeUniforms.uTime.value = t
 
     /* ── Presencia del show ──────────────────────────────────────────────
-       Entra con Mood Control y NO vuelve después del apagón: ese corte es
+       Entra con Mood Agency y NO vuelve después del apagón: ese corte es
        irreversible a propósito, es el punto de giro de la landing. */
     const arrive = range(p, 0.232, 0.278)
     const kill = range(p, 0.492, 0.522)

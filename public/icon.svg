@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Mood Control">
+  <title>Mood Control</title>
+  <!--
+    EL NÚCLEO, versión ICONO DE APLICACIÓN. Es el mismo mark que `favicon.svg`
+    con dos diferencias deliberadas:
+
+    1. Sin esquinas redondeadas: iOS y Android aplican SU PROPIA máscara encima.
+       Un redondeo nuestro dentro del redondeo del sistema deja un halo oscuro
+       en las esquinas que se ve barato.
+    2. Disco un punto más chico (r=22, no 24). El formato `maskable` recorta
+       hasta el 40% del radio: todo lo que importa tiene que caber ahí dentro
+       o el sistema te corta la marca por la mitad.
+
+    De acá salen apple-touch-icon.png, icon-192.png e icon-512.png.
+    Ver `public/README.md`.
+  -->
+  <rect width="64" height="64" fill="#050505"/>
+  <path d="M32 10A22 22 0 0 0 32 54Z" transform="translate(-2 0)" fill="#B026FF"/>
+  <path d="M32 10A22 22 0 0 1 32 54Z" transform="translate(2 0)" fill="#00E5FF"/>
+</svg>

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { isOverlayOpen, subscribeOverlay } from '@/core/overlayStore'
@@ -11,7 +11,15 @@ import {
 } from '@/core/quality'
 import { useSmoothScroll } from '@/core/useSmoothScroll'
 import { useWorldSync } from '@/core/useWorldSync'
-import { Cursor, Preloader, ScrollHUD } from '@/ui'
+import {
+  Cursor,
+  Preloader,
+  ScrollHUD,
+  SceneBoundary,
+  SceneFallback,
+  SkipLink,
+  hasWebGL,
+} from '@/ui'
 import {
   Hero,
   Manifesto,
@@ -35,6 +43,27 @@ import {
  * Núcleo entra cuando está listo, detrás del preloader.
  */
 const Scene = lazy(() => import('@/scenes/Scene'))
+
+/**
+ * ESTADO DE LA ESCENA.
+ *
+ * - `live`  — el Núcleo está en pantalla. El caso de siempre.
+ * - `lost`  — el navegador nos quitó el contexto WebGL. El Canvas sigue MONTADO
+ *             a propósito (ver más abajo) y encima se pinta el fondo de respaldo.
+ * - `down`  — no hay 3D y no lo va a haber: sin soporte, la escena reventó, o
+ *             el contexto no volvió. Estado terminal, el Canvas se desmonta.
+ */
+type SceneState = 'live' | 'lost' | 'down'
+
+/**
+ * Cuánto esperamos a que vuelva un contexto perdido antes de rendirnos.
+ *
+ * Perder el contexto casi nunca es culpa de la página: el sistema recupera el
+ * driver, el portátil cambia de GPU, el móvil sale de suspensión. En esos casos
+ * el navegador devuelve el contexto en menos de un segundo y la escena se
+ * reconstruye sola. Pasados seis, no vuelve.
+ */
+const RESTORE_GRACE_MS = 6000
 
 /**
  * GOBERNADOR DEL LOOP DE RENDER.
@@ -86,6 +115,15 @@ export default function App() {
   const q = getQuality()
 
   /**
+   * ¿Hay 3D? Se pregunta ANTES del primer render, no después de que el Canvas
+   * explote. Sin esta comprobación, un dispositivo sin WebGL montaba el Canvas,
+   * three lanzaba al crear el contexto y se caía el árbol entero de React: la
+   * landing no perdía el fondo, perdía los catorce capítulos.
+   */
+  const [sceneState, setSceneState] = useState<SceneState>(() => (hasWebGL() ? 'live' : 'down'))
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  /**
    * Pausa del render. Dos motivos, un solo interruptor:
    * - `document.hidden`: la pestaña está en segundo plano.
    * - una capa opaca a pantalla completa (ver `@/core/overlayStore`).
@@ -119,6 +157,63 @@ export default function App() {
 
   useEffect(() => subscribeQuality((live) => setDpr(live.dpr)), [])
 
+  const hasCanvas = sceneState !== 'down'
+  // Con el contexto perdido no se puede pedir un frame: three lanzaría contra
+  // un contexto muerto en cada llamada de dibujo. Se congela igual que con la
+  // pestaña de fondo.
+  const frozen = paused || sceneState === 'lost'
+
+  /**
+   * PÉRDIDA Y RECUPERACIÓN DEL CONTEXTO WEBGL.
+   *
+   * Pasa de verdad y más a menudo de lo que parece: el sistema reinicia el
+   * driver, un portátil híbrido cambia de GPU, el móvil vuelve de suspensión,
+   * o el navegador nos quita el contexto porque otra pestaña pidió uno y ya no
+   * quedan. El evento NO lanza ninguna excepción, así que ningún ErrorBoundary
+   * se entera: el canvas simplemente se queda en negro para siempre.
+   *
+   * Dos detalles que deciden si esto funciona o es decorativo:
+   *
+   * 1. `preventDefault()` en `webglcontextlost` es OBLIGATORIO. Sin él el
+   *    navegador NUNCA emite `webglcontextrestored` y la pérdida pasa de
+   *    temporal a definitiva. Es una línea y es toda la diferencia.
+   *
+   * 2. El Canvas NO se desmonta mientras esperamos. El evento de recuperación
+   *    lo emite ESE elemento `<canvas>`: si lo quitamos del árbol nos quedamos
+   *    sin nadie a quien escuchar, y una pérdida perfectamente recuperable se
+   *    vuelve permanente. Se tapa con el fondo de respaldo y se espera.
+   */
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    let graceTimer = 0
+
+    const onLost = (event: Event) => {
+      event.preventDefault()
+      console.warn('[mood] Contexto WebGL perdido. Esperando a que vuelva.')
+      setSceneState('lost')
+      graceTimer = window.setTimeout(() => setSceneState('down'), RESTORE_GRACE_MS)
+    }
+
+    const onRestored = () => {
+      window.clearTimeout(graceTimer)
+      setSceneState('live')
+    }
+
+    canvas.addEventListener('webglcontextlost', onLost)
+    canvas.addEventListener('webglcontextrestored', onRestored)
+
+    return () => {
+      window.clearTimeout(graceTimer)
+      canvas.removeEventListener('webglcontextlost', onLost)
+      canvas.removeEventListener('webglcontextrestored', onRestored)
+    }
+  }, [hasCanvas])
+
+  /** La escena reventó (chunk que no llega, shader que no compila). Terminal. */
+  const onSceneError = useCallback(() => setSceneState('down'), [])
+
   /**
    * SUBÁRBOLES CONGELADOS.
    *
@@ -144,8 +239,12 @@ export default function App() {
 
   const chapters = useMemo(
     () => (
-      // Los 14 capítulos, encima del Canvas.
-      <main className="relative z-10">
+      /* Los 14 capítulos, encima del Canvas.
+         `tabIndex={-1}` no mete a `<main>` en el orden de tabulación: lo hace
+         ENFOCABLE, que es otra cosa. Sin esto el "saltar al contenido" mueve el
+         scroll pero no el foco, y el siguiente Tab devuelve al usuario al
+         principio: un atajo que no ahorra nada. */
+      <main id="contenido" tabIndex={-1} className="relative z-10">
         <Hero />
         <Manifesto />
         <Division />
@@ -200,32 +299,48 @@ export default function App() {
 
   return (
     <>
+      {/* Primer punto de tabulación del documento. Va antes que nada. */}
+      {ready && <SkipLink />}
+
       {!ready && <Preloader onComplete={() => setReady(true)} />}
 
       <Cursor />
 
       {/* EL NÚCLEO. Un solo Canvas, fijo, para toda la landing.
           `pointer-events-none` para que el scroll y los clicks pasen al DOM. */}
-      <div className="pointer-events-none fixed inset-0 z-0">
-        <Canvas
-          dpr={dpr}
-          gl={{
-            antialias: q.tier === 'high',
-            powerPreference: 'high-performance',
-            // El post-processing hace su propio tone mapping; aplicarlo dos
-            // veces lava los neones de Mood Control.
-            alpha: false,
-          }}
-          camera={{ fov: 45, position: [0, 0, 6], near: 0.1, far: 100 }}
-          /* 'always' mientras se vea: el Núcleo respira aunque nadie scrollee.
-             'never' cuando no se ve: pintar detrás de un modal opaco o con la
-             pestaña en segundo plano es quemar batería para nadie. */
-          frameloop={paused ? 'never' : 'always'}
-        >
-          <RenderGovernor paused={paused} />
-          {scene}
-        </Canvas>
-      </div>
+      {hasCanvas && (
+        <SceneBoundary onError={onSceneError}>
+          <div className="pointer-events-none fixed inset-0 z-0">
+            <Canvas
+              ref={canvasRef}
+              dpr={dpr}
+              gl={{
+                antialias: q.tier === 'high',
+                powerPreference: 'high-performance',
+                // El post-processing hace su propio tone mapping; aplicarlo dos
+                // veces lava los neones de Mood Agency.
+                alpha: false,
+              }}
+              camera={{ fov: 45, position: [0, 0, 6], near: 0.1, far: 100 }}
+              /* 'always' mientras se vea: el Núcleo respira aunque nadie scrollee.
+                 'never' cuando no se ve: pintar detrás de un modal opaco, con la
+                 pestaña en segundo plano o contra un contexto perdido es quemar
+                 batería para nadie. */
+              frameloop={frozen ? 'never' : 'always'}
+            >
+              <RenderGovernor paused={frozen} />
+              {scene}
+            </Canvas>
+          </div>
+        </SceneBoundary>
+      )}
+
+      {/* DEGRADACIÓN CON DIGNIDAD.
+          Va DESPUÉS del Canvas en el DOM a propósito: ambos son `fixed z-0`, y
+          entre hermanos con el mismo z-index gana el último. Así, mientras
+          esperamos a que vuelva un contexto perdido, esto tapa el canvas muerto
+          sin necesidad de desmontarlo (y de perder el evento de recuperación). */}
+      {sceneState !== 'live' && <SceneFallback />}
 
       {/* SCRIM DE LEGIBILIDAD.
           Va ENTRE el canvas (z-0) y el texto (z-10). El Núcleo ocupa toda la

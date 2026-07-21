@@ -349,7 +349,7 @@ export function Crystals() {
    * segundo pase de 120.000 partículas durante TODA la landing por un cristal
    * que no aparece hasta el 68% del scroll.
    *
-   * Lo montamos al llegar a Mood Net: un único re-render en toda la sesión,
+   * Lo montamos al llegar a Mood Creative: un único re-render en toda la sesión,
    * disparado por `subscribeChapter` —el canal de baja frecuencia que el
    * contrato de arquitectura autoriza expresamente— y con margen de sobra para
    * que el shader compile antes de que el cristal se vea. Una vez montado no se

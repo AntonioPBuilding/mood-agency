@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
-import { CONTROL } from '@/content'
+import { EVENTS } from '@/content'
 import { getQuality } from '@/core/quality'
 import { ChapterSection } from './ChapterSection'
 import { gsap } from './_gsap'
 import { CONTROL_BLUE, CONTROL_RED, CONTROL_VIOLET, INK, alpha, chapterMeta } from './_tokens'
 
 /**
- * MOOD CONTROL — cartel de festival con la señal rota.
+ * MOOD AGENCY (capítulo `controlIntro`) — cartel de festival con la señal rota.
  *
  * La aberración cromática NO se hace con `text-shadow` animado: pintar sombras
  * de texto en cada frame es trabajo de CPU en el hilo principal. Se hace con dos
@@ -17,7 +17,7 @@ import { CONTROL_BLUE, CONTROL_RED, CONTROL_VIOLET, INK, alpha, chapterMeta } fr
  * Las copias son `aria-hidden`: el lector de pantalla oye el nombre UNA vez.
  */
 
-const WORDS = CONTROL.name.split(' ')
+const WORDS = EVENTS.name.split(' ')
 const META = chapterMeta('controlIntro')
 
 /** Keyframes irregulares: un glitch regular deja de leerse como fallo.
@@ -75,7 +75,7 @@ export function ControlIntro(): React.JSX.Element {
     <ChapterSection
       id="controlIntro"
       sectionRef={sectionRef}
-      ariaLabel={CONTROL.name}
+      ariaLabel={EVENTS.name}
       innerClassName="justify-between px-5 py-8 md:px-10 md:py-12"
     >
       <header
@@ -83,7 +83,7 @@ export function ControlIntro(): React.JSX.Element {
         style={{ borderColor: alpha(CONTROL_VIOLET, 35) }}
       >
         <p className="type-label" style={{ color: CONTROL_VIOLET }}>
-          {CONTROL.kicker}
+          {EVENTS.kicker}
         </p>
         <p className="type-label shrink-0" style={{ color: alpha(INK, 35) }}>
           {META.index}
@@ -118,7 +118,7 @@ export function ControlIntro(): React.JSX.Element {
         className="text-lead max-w-[42ch] self-end text-balance"
         style={{ color: alpha(INK, 70) }}
       >
-        {CONTROL.intro}
+        {EVENTS.intro}
       </p>
     </ChapterSection>
   )

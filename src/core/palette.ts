@@ -4,6 +4,27 @@
  * La paleta no es decoración: es el estado de ánimo. Cuando el Núcleo cambia de
  * mundo, cambia TODO —fondo, niebla, bloom, temperatura de luz— y se interpola,
  * nunca se corta de golpe (salvo el blackout, que es un corte a propósito).
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * ⚠ LOS IDS DE MUNDO NO SON LOS NOMBRES DE MARCA. Leer antes de renombrar nada.
+ *
+ * Los ids `'control'` y `'net'` son ANTERIORES a los nombres definitivos de las
+ * divisiones y ya NO coinciden con ellos:
+ *
+ *   id 'void'     →  el prólogo, sin marca
+ *   id 'control'  →  mundo de EVENTOS      →  marca MOOD AGENCY
+ *   id 'net'      →  mundo de TECNOLOGÍA   →  marca MOOD CREATIVE
+ *
+ * Y la trampa que se lleva a todo el mundo por delante: la marca madre se llama
+ * MOOD CONTROL, y NO es el mundo `'control'`. El mundo `'control'` es Mood
+ * Agency, una de sus dos divisiones.
+ *
+ * Los ids se quedan como están a propósito. Están cableados en `WorldId`, en los
+ * `ChapterId` (`controlIntro`, `netServices`…), en los 7 estados del Núcleo de
+ * `@/scenes` y en los shaders: renombrarlos es tocar la mitad del proyecto para
+ * que el visitante no note absolutamente nada. Los nombres visibles salen todos
+ * de `@/content` (`BRAND`, `EVENTS`, `TECH`), que es donde se cambian.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { Color } from 'three'
@@ -43,7 +64,7 @@ export const WORLDS: Record<WorldId, World> = {
     fog: 0.035,
     chroma: 0.0006,
   },
-  /** MOOD CONTROL — el show. Neón, humo, lasers, todo al beat. */
+  /** EVENTOS (marca Mood Agency) — el show. Neón, humo, lasers, todo al beat. */
   control: {
     id: 'control',
     bg: '#0A0208',
@@ -55,7 +76,7 @@ export const WORLDS: Record<WorldId, World> = {
     fog: 0.075,
     chroma: 0.0028,
   },
-  /** MOOD NET — la precisión. Luz de sala, líneas de 1px, cero ruido. */
+  /** TECNOLOGÍA (marca Mood Creative) — la precisión. Luz de sala, líneas de 1px, cero ruido. */
   net: {
     id: 'net',
     bg: '#0B0D0F',

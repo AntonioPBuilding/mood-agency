@@ -1,0 +1,11 @@
+# Mood Control — moodcontrol.es
+# Una sola página: no hay nada que esconderle al rastreador.
+
+User-agent: *
+Allow: /
+
+# El sitemap de un one-page no descubre URLs nuevas (sólo hay una), pero sí
+# declara cuál es la forma CANÓNICA de esa URL y cuándo cambió por última vez.
+# Eso es lo que evita que el índice se quede con una variante con parámetros o
+# sin barra final. Cuesta doce líneas y quita ambigüedad.
+Sitemap: https://moodcontrol.es/sitemap.xml

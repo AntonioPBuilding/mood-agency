@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react'
-import { CONTROL } from '@/content'
+import { EVENTS } from '@/content'
 import { getQuality } from '@/core/quality'
 import { ChapterSection } from './ChapterSection'
 import { gsap } from './_gsap'
 import { CONTROL_VIOLET, EASE_OUT_EXPO, INK, alpha } from './_tokens'
 
 /**
- * SERVICIOS DE CONTROL — créditos de cartel de festival.
+ * SERVICIOS DE MOOD AGENCY (capítulo `controlServices`) — créditos de cartel.
  *
  * Una fila por servicio, tamaño brutal, número a la izquierda. Al pasar por
  * encima la fila se desplaza, se enciende en neón y aparece la descripción.
@@ -100,12 +100,24 @@ export function ControlServices(): React.JSX.Element {
          pantalla y el aire (18vh de padding + 8vh de hueco) se comía la otra
          media. El titular ya encogió en `index.css`; acá se recupera el resto
          apretando ese aire, que era decorativo, no estructural. */
-      innerClassName="justify-center gap-[6vh] px-5 py-[12vh] md:px-10"
+      innerClassName="justify-center gap-[4vh] px-5 py-[8vh] md:gap-[6vh] md:px-10 md:py-[12vh]"
     >
-      <h2 className="type-giga max-w-[14ch] uppercase">{CONTROL.claim}</h2>
+      {/* ENCABEZADO EN DOS PISOS, y el de arriba no es decoración.
+          "Hacemos que la sala se caiga" es un claim de agencia: le habla al
+          humano y no le dice NADA a un buscador —no contiene ni una de las cosas
+          que se venden—. El overline mete las palabras reales ("producción de
+          eventos", "DJs", "festivales") DENTRO del `<h2>`, a la vista, en la
+          misma voz mono que ya usan los índices de fila. Nada de texto oculto:
+          si merece indexarse, merece leerse. */}
+      <h2 className="flex flex-col gap-3 md:gap-4">
+        <span className="type-label" style={{ color: CONTROL_VIOLET }}>
+          {EVENTS.servicesHeading}
+        </span>
+        <span className="type-giga block max-w-[14ch] uppercase">{EVENTS.claim}</span>
+      </h2>
 
       <ul data-list className="flex flex-col">
-        {CONTROL.services.map((service) => (
+        {EVENTS.services.map((service) => (
           <li key={service.n} data-row className="border-t" style={{ borderColor: alpha(INK, 12) }}>
             <a
               href="#chapter-converge"
@@ -186,6 +198,41 @@ export function ControlServices(): React.JSX.Element {
               >
                 {service.desc}
               </span>
+
+              {/* ROSTER — artistas reales, no adorno.
+                  Sólo lo lleva el servicio de booking (`roster` es opcional en
+                  `EventService`). Dos decisiones deliberadas:
+
+                  1. SIEMPRE VISIBLE, nunca detrás del hover como la descripción.
+                     Estos son nombres propios que la gente busca por su cuenta:
+                     esconderlos tras un puntero los borra del móvil y del índice
+                     de Google a la vez.
+                  2. Es una `<ul>` con su etiqueta, no una frase con comas. Un
+                     lector de pantalla anuncia "lista de 4 elementos" y cada
+                     artista se lee como una entidad, que es lo que es. Una
+                     `<ul>` dentro de un `<a>` es HTML válido mientras no meta
+                     nada interactivo dentro, y no lo hace. */}
+              {service.roster !== undefined && (
+                <span className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-2 pb-1 md:col-start-2 md:col-span-2">
+                  <span className="type-label" style={{ color: alpha(CONTROL_VIOLET, 90) }}>
+                    {EVENTS.servicesUI.rosterLabel}
+                  </span>
+                  <ul className="flex flex-wrap items-center gap-2">
+                    {service.roster.map((artist) => (
+                      <li
+                        key={artist}
+                        className="type-label px-2.5 py-1"
+                        style={{
+                          border: `1px solid ${alpha(CONTROL_VIOLET, 32)}`,
+                          color: alpha(INK, 80),
+                        }}
+                      >
+                        {artist}
+                      </li>
+                    ))}
+                  </ul>
+                </span>
+              )}
             </a>
           </li>
         ))}
