@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "serve dist -s -l ${PORT:-3000}"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -20,6 +21,7 @@
     "postprocessing": "^6.39.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "serve": "^14.2.6",
     "tailwindcss": "^4.3.3",
     "three": "^0.185.1"
   },
