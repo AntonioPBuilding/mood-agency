@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'motion/react'
 import type {
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
+  RefObject,
 } from 'react'
 import { EVENTS } from '@/content'
 import { setOverlay } from '@/core/overlayStore'
 import { getQuality } from '@/core/quality'
 import { subscribeChapter } from '@/core/scrollStore'
 import { ChapterSection } from './ChapterSection'
+import { gsap } from './_gsap'
 import { useFrameLoop } from './useFrameLoop'
 import {
   CONTROL_BG,
@@ -29,14 +31,56 @@ import {
  * `ChapterId`, en la coreografía 3D y en `CHAPTER_MAP`, y su `vh` define un
  * tramo del timeline scroll-linked. Lo que cambió es el contenido, no el hueco.
  *
- * ── POR QUÉ NO HAY NI UNA FOTO ──────────────────────────────────────────────
+ * ── LA FOTO Y EL ARTE GENERATIVO CONVIVEN ───────────────────────────────────
  *
- * Del roster REAL sólo se conoce el NOMBRE (ver `ARTISTS` en `@/content`). No
- * hay retratos con derechos, no hay género musical y no hay trayectoria. En vez
- * de dejar cuatro huecos esperando un JPG, el "retrato" se GENERA: un hash del
- * nombre siembra un PRNG y de ahí salen ángulos, centros y paradas de color.
- * Determinista de verdad — mismo nombre, misma carta, en todos los navegadores
- * y en todos los despliegues. Cero peticiones, cero 404, cero placeholder roto.
+ * El "retrato" se GENERA: un hash del nombre siembra un PRNG y de ahí salen
+ * ángulos, centros y paradas de color. Determinista de verdad — mismo nombre,
+ * misma carta, en todos los navegadores y en todos los despliegues.
+ *
+ * Encima de ese arte va la FOTO del artista, cuando existe. Y "cuando existe" es
+ * literal: hoy `public/artists/*` está VACÍO. La foto no se trata como un
+ * requisito sino como una MEJORA — si el `<img>` falla, se retira y abajo ya
+ * está el arte generativo, que nunca dejó de pintarse. Cero iconos rotos, cero
+ * huecos, cero `alt` colgando en medio de la carta. La landing es publicable hoy
+ * y mejora sola el día que el cliente suba los cuatro JPG.
+ *
+ * Las cuatro fotos vienen con encuadres MUY distintos (dos verticales, una casi
+ * cuadrada y una de grupo horizontal). Para que se lean como una COLECCIÓN y no
+ * como cuatro recortes sueltos, se imponen tres cosas: una proporción única
+ * (`PHOTO_RATIO`), `object-fit: cover` y un `object-position` alto —las caras
+ * están arriba en las cuatro, y centrar verticalmente decapitaría a la banda—.
+ * La proporción vive en el CONTENEDOR, así que el layout está fijado antes de
+ * que la imagen empiece a descargarse: no hay salto posible.
+ *
+ * El color se unifica con CAPAS DE MEZCLA ESTÁTICAS, nunca con `filter` por
+ * frame. Las fotos son casi monocromas, así que un `mix-blend-mode: color` con
+ * un degradado de dos neones les impone el tono de Mood Agency conservando su
+ * luminancia: duotono real, coste de composición, cero JS. La holografía y el
+ * barrido van POR ENCIMA de la foto — es exactamente eso lo que hace que se lea
+ * como un cromo plastificado y no como una foto con marco.
+ *
+ * ── EL SOBRE ────────────────────────────────────────────────────────────────
+ *
+ * La sección arranca CERRADA, como un sobre de cromos, y al pulsarlo las cuatro
+ * cartas salen escalonadas. Tres decisiones que no son negociables:
+ *
+ * 1. La apertura NO se ata al scroll. Es una acción del usuario. El respaldo por
+ *    si nadie pulsa es un `IntersectionObserver` con retardo, NO un ScrollTrigger:
+ *    en este proyecto los triggers se miden con el preloader puesto y quedan
+ *    obsoletos (está documentado en `App.tsx`), y encima esto no es coreografía
+ *    de timeline sino un "llevo dos segundos mirándolo y no ha pasado nada".
+ *
+ * 2. Las CARTAS NUNCA SE DESMONTAN. El sobre es una capa por encima, no un
+ *    interruptor de contenido. Quien navega con teclado tabula a la primera carta
+ *    aunque jamás dispare la animación: el foco entrando en la fila abre el sobre
+ *    de golpe, sin animación. La información no puede vivir detrás de un gesto.
+ *
+ * 3. Con `reduced` no hay sobre. Las cuatro cartas están puestas desde el primer
+ *    frame. Una animación no puede ser el peaje para leer un roster.
+ *
+ * El sobre se abre UNA vez por sesión (`sessionStorage`), y hay un botón discreto
+ * para repetirlo: la gente quiere verlo dos veces, y negárselo es peor que
+ * ofrecerlo.
  *
  * ── LOS TRES EFECTOS, Y POR QUÉ SON BARATOS ─────────────────────────────────
  *
@@ -94,6 +138,16 @@ const ACCENT: Record<Accent, string> = {
 /** Los tres neones de Mood Agency. La paleta del arte generativo sale de acá. */
 const NEONS = [CONTROL_VIOLET, CONTROL_BLUE, CONTROL_RED]
 
+/**
+ * Foto lista para pintar, o nada. El `alt` se COMPONE con copy de `content.ts`:
+ * describir una imagen es texto de cara al usuario tanto como un titular, y no
+ * se escribe a mano en un `.tsx`.
+ */
+function photoFor(artist: Artist): { src: string; alt: string } | undefined {
+  if (artist.image === undefined) return undefined
+  return { src: artist.image, alt: `${UI.photoAlt} ${artist.name}` }
+}
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])'
 
@@ -101,6 +155,23 @@ const FOCUSABLE =
 const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1]
 
 const pad = (n: number) => String(n).padStart(2, '0')
+
+/**
+ * PROPORCIÓN ÚNICA DE TODAS LAS FOTOS.
+ *
+ * 5/6 sobre una carta de 5/7 deja la foto ocupando ~86% del alto y le cede la
+ * franja de abajo al nombre. Vive en el CONTENEDOR, no en el `<img>`: así el
+ * hueco está reservado antes de que empiece la descarga y da igual que la imagen
+ * llegue tarde, llegue distinta o no llegue.
+ */
+const PHOTO_RATIO = '5 / 6'
+
+/**
+ * Encuadre vertical de la foto. Las cuatro tienen las caras en el tercio alto —
+ * incluida la horizontal de grupo—, así que centrar (50%) las cortaría por el
+ * cuello. 18% baja lo justo para no pegar las cabezas al borde.
+ */
+const PHOTO_POSITION = '50% 18%'
 
 /* ──────────────────────  ARTE GENERATIVO DETERMINISTA  ─────────────────────── */
 
@@ -141,6 +212,18 @@ interface CardArt {
   spin: number
   /** Desfase de la respiración. Evita que las cuatro cartas latan a la vez. */
   phase: number
+  /**
+   * DUOTONO de la foto. Degradado de dos neones que se aplica en
+   * `mix-blend-mode: color`: toma tono y saturación de acá y la LUMINANCIA de la
+   * foto. Sobre imágenes casi monocromas es un duotono de manual, y como es una
+   * capa estática el compositor lo resuelve una vez y no vuelve a tocarlo.
+   */
+  duotone: string
+  /**
+   * Realce de sombras del mismo acento, en `soft-light`. El duotono solo iguala
+   * el tono pero aplana; esto le devuelve el contraste sin recurrir a `filter`.
+   */
+  shade: string
 }
 
 /**
@@ -172,6 +255,12 @@ function artFor(artist: Artist): CardArt {
     glow: `radial-gradient(circle at ${cx}% ${cy}%, ${alpha(INK, 24)} 0%, transparent 52%)`,
     spin,
     phase,
+    // Los DOS colores del duotono son el acento del artista y el segundo neón que
+    // ya salió de la semilla: la foto acaba teñida con la misma pareja de colores
+    // que su propio arte generativo. Es lo que hace que las cuatro fotos —de
+    // orígenes y encuadres distintos— se lean como una sola colección.
+    duotone: `linear-gradient(158deg, ${accent} 0%, ${second} 100%)`,
+    shade: `linear-gradient(196deg, ${alpha(accent, 55)} 0%, ${alpha(CONTROL_BG, 92)} 100%)`,
   }
 }
 
@@ -223,10 +312,103 @@ function setRosterModal(open: boolean): void {
 
 /* ────────────────────────────  CAPAS DE LA CARTA  ──────────────────────────── */
 
+/**
+ * FOTOS QUE YA SABEMOS QUE NO ESTÁN.
+ *
+ * La misma foto se pinta en dos sitios (la carta de la fila y la carta grande del
+ * detalle). Sin esta memoria compartida, abrir el detalle volvería a pedir un
+ * archivo que ya falló y volvería a montar un `<img>` roto durante un frame.
+ *
+ * Es un `Set` de módulo y no estado de React a propósito: describe el SERVIDOR,
+ * no la vista, y sobrevive a que la carta se desmonte y se vuelva a montar.
+ */
+const brokenPhotos = new Set<string>()
+
+interface CardPhotoProps {
+  src: string
+  alt: string
+  art: CardArt
+}
+
+/**
+ * LA FOTO DEL ARTISTA, tratada como carta.
+ *
+ * El `onError` NO es una red de seguridad defensiva: es el camino que se recorre
+ * HOY, porque las carpetas de `public/artists/` están vacías. Al fallar, el
+ * componente se retira ENTERO —imagen y capas de mezcla— y debajo queda el arte
+ * generativo intacto. Retirar también las capas importa: un duotono en
+ * `mix-blend-mode` sobre el arte generativo le aplanaría los colores, y el arte
+ * ya está resuelto sin ayuda.
+ *
+ * `loading="lazy"` porque el capítulo `gallery` está a nueve viewports del hero:
+ * descargar cuatro retratos que nadie va a mirar hasta dentro de medio minuto
+ * compite con el Núcleo justo cuando más caro es. `decoding="async"` para que el
+ * descodificado no bloquee el hilo principal en mitad del scroll.
+ */
+function CardPhoto({ src, alt, art }: CardPhotoProps): React.JSX.Element | null {
+  // El estado inicial CONSULTA el `Set`: si ya se sabe que falta, este `<img>` no
+  // llega a existir y no se pide el archivo por segunda vez.
+  const [broken, setBroken] = useState(() => brokenPhotos.has(src))
+  if (broken) return null
+
+  return (
+    <span
+      className="pointer-events-none absolute inset-x-0 top-0 block overflow-hidden"
+      // La proporción va acá y no en el `<img>`: el hueco queda reservado desde
+      // el primer layout, antes de saber siquiera el tamaño real del archivo.
+      style={{ aspectRatio: PHOTO_RATIO }}
+    >
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onError={() => {
+          brokenPhotos.add(src)
+          setBroken(true)
+        }}
+        className="absolute inset-0 block h-full w-full object-cover"
+        style={{ objectPosition: PHOTO_POSITION }}
+      />
+
+      {/* DUOTONO. `color` toma tono+saturación de este degradado y luminancia de
+          la foto: sobre imágenes casi monocromas es un duotono de verdad, y no
+          cuesta ni un frame de JS. La opacidad deja pasar una pizca del original
+          para que no quede plastificado de más. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 block"
+        style={{ backgroundImage: art.duotone, mixBlendMode: 'color', opacity: 0.78 }}
+      />
+
+      {/* Contraste. `soft-light` hunde las sombras hacia el acento en vez de
+          hacia el gris: es lo que evita que el duotono se vea lavado. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 block"
+        style={{ backgroundImage: art.shade, mixBlendMode: 'soft-light', opacity: 0.9 }}
+      />
+
+      {/* Costura con el arte generativo: la foto se disuelve por abajo en el
+          fondo de la carta en vez de terminar en un corte recto. Sin esto se ve
+          "foto pegada sobre un fondo", que es justo lo contrario de un cromo. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 block"
+        style={{
+          background: `linear-gradient(0deg, ${CONTROL_BG} 0%, ${alpha(CONTROL_BG, 30)} 26%, transparent 58%)`,
+        }}
+      />
+    </span>
+  )
+}
+
 interface ArtworkProps {
   art: CardArt
   /** Opacidad base de la holografía. El loop la sube al pasar el puntero. */
   holoOpacity: number
+  /** La foto, si el artista tiene una declarada. Puede fallar; está previsto. */
+  photo?: { src: string; alt: string }
 }
 
 /**
@@ -239,7 +421,7 @@ interface ArtworkProps {
  * Todas van `absolute inset-0` dentro de un contenedor de proporción fijada: una
  * capa de estas no puede mover el layout ni cuando entra ni cuando se anima.
  */
-function Artwork({ art, holoOpacity }: ArtworkProps): React.JSX.Element {
+function Artwork({ art, holoOpacity, photo }: ArtworkProps): React.JSX.Element {
   return (
     <>
       {/* Retrato. Sobredimensionado y centrado porque va a GIRAR: a tamaño
@@ -260,6 +442,13 @@ function Artwork({ art, holoOpacity }: ArtworkProps): React.JSX.Element {
           }}
         />
       </span>
+
+      {/* LA FOTO, si existe y si carga. Va por ENCIMA del arte generativo —que
+          pasa a ser fondo y marco— y por DEBAJO de las dos láminas de abajo.
+          Ese sándwich es el efecto entero: holografía y barrido cruzando la cara
+          del artista es lo que se lee como cromo plastificado. Al revés sería
+          una foto con un marco de colores. */}
+      {photo !== undefined && <CardPhoto src={photo.src} alt={photo.alt} art={art} />}
 
       {/* Holografía. `color-dodge` sobre el negro de Mood Agency: satura el
           arcoíris en vez de lavarlo. La lámina mide 200% para que trasladarla
@@ -485,7 +674,7 @@ function ArtistDialog({ artist, index, onClose }: ArtistDialogProps): React.JSX.
             className="relative mx-auto w-full max-w-[20rem] overflow-hidden"
             style={{ aspectRatio: '5 / 7', border: `1px solid ${alpha(accent, 38)}` }}
           >
-            <Artwork art={art} holoOpacity={0.42} />
+            <Artwork art={art} holoOpacity={0.42} photo={photoFor(artist)} />
             <span
               aria-hidden="true"
               className="pointer-events-none absolute inset-0"
@@ -493,6 +682,15 @@ function ArtistDialog({ artist, index, onClose }: ArtistDialogProps): React.JSX.
                 background: `linear-gradient(0deg, ${CONTROL_BG} 0%, ${alpha(CONTROL_BG, 40)} 34%, transparent 62%)`,
               }}
             />
+            {/* Tipo de acto, arriba a la derecha: mismo sitio que en la carta
+                pequeña, para que se reconozca como LA MISMA carta ampliada. */}
+            <span
+              aria-hidden="true"
+              className="type-label absolute right-5 top-5 px-2 py-1"
+              style={{ border: `1px solid ${alpha(accent, 60)}`, color: accent }}
+            >
+              {UI.kinds[artist.kind]}
+            </span>
             <span
               className="absolute inset-x-0 bottom-0 block px-5 pb-5"
               style={{ color: INK }}
@@ -505,9 +703,17 @@ function ArtistDialog({ artist, index, onClose }: ArtistDialogProps): React.JSX.
 
           {/* ── Ficha ── */}
           <div className="flex flex-col gap-7">
-            <h3 id={titleId} className="type-huge uppercase">
-              {artist.name}
-            </h3>
+            <div className="flex flex-col gap-3">
+              <h3 id={titleId} className="type-huge uppercase">
+                {artist.name}
+              </h3>
+              {/* El tipo de acto SÍ se anuncia acá (la insignia de la carta es
+                  decorativa y va `aria-hidden`): quien no ve la carta necesita
+                  saber que Rock & Bikes es una banda y no un DJ. */}
+              <p className="type-label" style={{ color: alpha(INK, 45) }}>
+                {UI.kinds[artist.kind]}
+              </p>
+            </div>
 
             {/* Cada bloque aparece SOLO cuando su campo existe. Hoy los tres
                 están vacíos y no se ve ninguno: no hay "próximamente", no hay
@@ -589,6 +795,202 @@ function ArtistDialog({ artist, index, onClose }: ArtistDialogProps): React.JSX.
   )
 }
 
+/* ──────────────────────────────  EL SOBRE  ─────────────────────────────────── */
+
+/**
+ * `sealed` → el sobre tapa la fila. `opening` → corre la animación de GSAP.
+ * `open` → el sobre ya no existe y mandan las cartas.
+ *
+ * No hay un cuarto estado "cerrándose": el botón de repetir vuelve a `sealed` de
+ * golpe, porque lo que la gente quiere volver a ver es la APERTURA, no un sobre
+ * rearmándose hacia atrás.
+ */
+type PackPhase = 'sealed' | 'opening' | 'open'
+
+/**
+ * UNA VEZ POR SESIÓN, y en `sessionStorage` y no en una variable de módulo.
+ *
+ * Una variable de módulo se pierde al recargar, y recargar es exactamente lo que
+ * hace alguien que vuelve a la landing desde otra pestaña: se comería la
+ * animación otra vez sin haberla pedido. `sessionStorage` dura lo que dura la
+ * pestaña, que es la definición literal de "sesión".
+ *
+ * Las dos funciones van envueltas porque en modo privado de Safari y con cookies
+ * de terceros bloqueadas el simple ACCESO a `sessionStorage` lanza. Que el
+ * roster no se pinte por una política de almacenamiento sería absurdo: si falla,
+ * el sobre se comporta como si fuera la primera visita.
+ */
+const PACK_KEY = 'mood:roster-pack'
+
+function packAlreadyOpened(): boolean {
+  try {
+    return window.sessionStorage.getItem(PACK_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function rememberPackOpened(): void {
+  try {
+    window.sessionStorage.setItem(PACK_KEY, '1')
+  } catch {
+    // Almacenamiento bloqueado. Se pierde el "una vez por sesión" y nada más.
+  }
+}
+
+/**
+ * Retardo del respaldo automático. Dos segundos y pico: suficiente para que
+ * quien QUIERE pulsarlo lo pulse él, y lo bastante corto para que quien pasa de
+ * largo no se quede mirando un sobre cerrado preguntándose dónde está el roster.
+ */
+const AUTO_OPEN_MS = 2200
+
+/**
+ * Chispas de la apertura. Doce, repartidas en círculo y con los tres neones
+ * alternados: son `<span>` de 6px que sólo mueven `transform` y `opacity`.
+ * Deterministas, así que la explosión es idéntica en cada repetición.
+ */
+const BURST = Array.from({ length: 12 }, (_, i) => {
+  const angle = (i / 12) * Math.PI * 2
+  return {
+    x: Math.cos(angle),
+    y: Math.sin(angle),
+    color: NEONS[i % NEONS.length],
+  }
+})
+
+/** Radio máximo de la explosión, en px. */
+const BURST_RADIUS = 150
+
+/* Pieles del sobre. Cadenas constantes: se calculan una vez por módulo. */
+const PACK_SKIN = `linear-gradient(152deg, ${alpha(CONTROL_VIOLET, 76)} 0%, ${alpha(CONTROL_BLUE, 32)} 46%, ${alpha(CONTROL_RED, 68)} 100%)`
+const PACK_GRID = `repeating-linear-gradient(64deg, ${alpha(INK, 9)} 0 1px, transparent 1px 9px)`
+const PACK_SHEEN = `linear-gradient(100deg, transparent 0%, ${alpha(INK, 48)} 50%, transparent 100%)`
+/** Tira de rasgado. Es el detalle que dice "esto se abre por AQUÍ". */
+const PACK_TEAR = `repeating-linear-gradient(90deg, ${alpha(INK, 46)} 0 6px, transparent 6px 12px)`
+const PACK_FLASH = `radial-gradient(circle at 50% 50%, ${alpha(INK, 92)} 0%, ${alpha(CONTROL_VIOLET, 44)} 26%, transparent 62%)`
+
+interface PackProps {
+  packRef: RefObject<HTMLButtonElement | null>
+  flashRef: RefObject<HTMLSpanElement | null>
+  burstRef: RefObject<HTMLSpanElement | null>
+  onOpen: () => void
+}
+
+/**
+ * EL SOBRE CERRADO.
+ *
+ * Es un `<button>` de verdad —no un `div` con `onClick`—, así que Enter y Espacio
+ * funcionan solos, sale en el orden de tabulación y hereda el `:focus-visible`
+ * global. `aria-expanded={false}` porque describe literalmente lo que pasa: hay
+ * contenido detrás de este control y ahora mismo no está desplegado.
+ *
+ * Mide como una carta (misma proporción, mismo tope de alto) para que al abrirse
+ * las cartas parezcan salir de él y no reemplazarlo.
+ *
+ * ⚠ EL `transform` DEL BOTÓN ES DE GSAP. La respiración y el barrido de reposo
+ * viven en spans INTERIORES con animaciones CSS: si respirara el propio botón,
+ * la animación CSS y la timeline de apertura se pelearían por la misma propiedad
+ * y el sobre parpadearía justo en el frame que más se mira.
+ */
+function Pack({ packRef, flashRef, burstRef, onOpen }: PackProps): React.JSX.Element {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center">
+      <button
+        type="button"
+        ref={packRef}
+        onClick={onOpen}
+        aria-label={UI.pack.label}
+        aria-expanded={false}
+        data-cursor="cta"
+        data-cursor-label={UI.pack.cta}
+        // `w-[64vw]` con tope en `rem` y el mismo `max-h-[54svh]` que las cartas:
+        // en un móvil apaisado se recorta igual que ellas en vez de desbordar el
+        // capítulo, que es `overflow-hidden`. A 375px mide 240×336: muy por
+        // encima de los 44px de área táctil mínima.
+        className="gpu pointer-events-auto relative block aspect-[5/7] max-h-[54svh] w-[64vw] max-w-[15rem] overflow-hidden outline-offset-4"
+        style={{
+          backgroundColor: CONTROL_BG,
+          border: `1px solid ${alpha(CONTROL_VIOLET, 62)}`,
+          boxShadow: `inset 0 0 0 1px ${alpha(INK, 10)}, 0 18px 48px -22px ${alpha(CONTROL_VIOLET, 85)}`,
+        }}
+      >
+        {/* Piel del sobre. Respira: es lo que lo delata como pulsable sin tener
+            que escribir "pulsá aquí" dos veces. */}
+        <span
+          aria-hidden="true"
+          className="pack-breathe absolute inset-0 block"
+          style={{ backgroundImage: `${PACK_GRID}, ${PACK_SKIN}` }}
+        />
+
+        {/* Mismas bandas holográficas que las cartas: el sobre pertenece a la
+            colección, no es un envoltorio genérico. */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 block"
+          style={{ backgroundImage: HOLO, mixBlendMode: 'color-dodge', opacity: 0.32 }}
+        />
+
+        {/* Brillo que recorre el foil. Traslada una lámina ya pintada; el
+            degradado nunca se recalcula, igual que en las cartas. */}
+        <span
+          aria-hidden="true"
+          className="pack-sheen pointer-events-none absolute inset-y-0 left-0 block w-1/2"
+          style={{ backgroundImage: PACK_SHEEN, mixBlendMode: 'screen' }}
+        />
+
+        {/* Tira de rasgado. */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-[16%] block h-px"
+          style={{ backgroundImage: PACK_TEAR }}
+        />
+
+        <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 text-center">
+          <span className="type-label" style={{ color: alpha(INK, 58) }}>
+            {`${pad(ITEMS.length)} ${UI.pack.countLabel}`}
+          </span>
+          <span
+            className="text-2xl font-semibold uppercase leading-none"
+            style={{ color: INK }}
+          >
+            {EVENTS.name}
+          </span>
+          <span className="type-label" style={{ color: CONTROL_VIOLET }}>
+            {UI.pack.cta}
+          </span>
+        </span>
+      </button>
+
+      {/* DESTELLO. Cubre toda la fila, no sólo el sobre: es lo que vende el
+          "reventón" y lo que tapa el frame en el que las cartas aparecen. */}
+      <span
+        ref={flashRef}
+        aria-hidden="true"
+        className="gpu pointer-events-none absolute inset-0 block"
+        style={{ backgroundImage: PACK_FLASH, mixBlendMode: 'screen', opacity: 0 }}
+      />
+
+      {/* CHISPAS. Se montan siempre que hay sobre para que la timeline las
+          encuentre ya en el DOM en el mismo frame en que arranca. */}
+      <span
+        ref={burstRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 block size-0"
+      >
+        {BURST.map((p, i) => (
+          <span
+            key={i}
+            data-burst=""
+            className="gpu absolute block size-1.5 rounded-full"
+            style={{ backgroundColor: p.color, opacity: 0 }}
+          />
+        ))}
+      </span>
+    </div>
+  )
+}
+
 /* ────────────────────────────────  SECCIÓN  ────────────────────────────────── */
 
 /** Nodo raíz de una carta + sus tres láminas, resueltas una sola vez. */
@@ -663,6 +1065,244 @@ export function Roster(): React.JSX.Element {
 
   const reduced = getQuality().reduced
 
+  // ── EL SOBRE ──────────────────────────────────────────────────────────────
+
+  const stageRef = useRef<HTMLDivElement>(null)
+  const packRef = useRef<HTMLButtonElement>(null)
+  const flashRef = useRef<HTMLSpanElement>(null)
+  const burstRef = useRef<HTMLSpanElement>(null)
+  /** Los `<li>`. GSAP anima ESTOS, nunca el `<button>` de dentro: ver abajo. */
+  const wraps = useRef<(HTMLLIElement | null)[]>([])
+
+  /**
+   * Con `reduced` o con el sobre ya abierto en esta sesión, se ARRANCA abierto.
+   * No es que la animación se salte: es que nunca llega a existir, y las cuatro
+   * cartas están puestas desde el primer frame.
+   */
+  const [phase, setPhase] = useState<PackPhase>(() =>
+    reduced || packAlreadyOpened() ? 'open' : 'sealed',
+  )
+
+  /**
+   * Espejo síncrono de `phase`. Los disparadores del sobre llegan desde un
+   * `setTimeout`, desde un `IntersectionObserver` y desde dos manejadores de
+   * evento distintos: todos tienen que poder preguntar "¿sigue cerrado?" y
+   * responderse SIN esperar al siguiente render, o dos de ellos abren el mismo
+   * sobre dos veces y la timeline se monta encima de sí misma.
+   */
+  const phaseRef = useRef<PackPhase>(phase)
+  /** ¿La apertura la pidió una PERSONA? Sólo entonces se mueve el foco. */
+  const focusOnOpen = useRef(false)
+  /** Tras "abrir otra vez", el foco vuelve al sobre: si no, se queda en la nada. */
+  const focusPackAgain = useRef(false)
+
+  const openPack = useCallback((focusFirst: boolean, instant: boolean) => {
+    if (phaseRef.current !== 'sealed') return
+    const next: PackPhase = instant ? 'open' : 'opening'
+    phaseRef.current = next
+    focusOnOpen.current = focusFirst
+    rememberPackOpened()
+    setPhase(next)
+  }, [])
+
+  const replayPack = useCallback(() => {
+    phaseRef.current = 'sealed'
+    focusOnOpen.current = false
+    focusPackAgain.current = true
+    setPhase('sealed')
+  }, [])
+
+  /**
+   * ALGUIEN LLEGÓ TABULANDO.
+   *
+   * `onFocusCapture` en la fila: el foco entra en una carta que está a opacidad
+   * 0 y hay que enseñarla YA. Se abre en modo instantáneo —sin animación— porque
+   * el foco ya está viajando a su destino y esconderlo detrás de un segundo de
+   * coreografía es exactamente el fallo que la animación pretendía evitar.
+   * No se toca el foco: ya está donde el usuario lo mandó.
+   */
+  const onRowFocus = useCallback(() => {
+    openPack(false, true)
+  }, [openPack])
+
+  /**
+   * RESPALDO POR VIEWPORT — y por qué `IntersectionObserver` y NO ScrollTrigger.
+   *
+   * Esto NO es coreografía scroll-linked: no hay ningún valor que interpolar
+   * contra el progreso. Es un temporizador con una condición de visibilidad
+   * ("lleva dos segundos en pantalla y nadie lo ha tocado"). Un ScrollTrigger
+   * además se mediría durante el preloader y quedaría obsoleto — está
+   * documentado en `App.tsx`.
+   *
+   * El temporizador se ARMA al entrar y se CANCELA al salir: quien pasa de largo
+   * a toda velocidad no deja un sobre abriéndose solo tres capítulos más abajo.
+   * `docVisible` está en las dependencias para que el efecto se rearme y limpie
+   * el timer si la pestaña se va a segundo plano a mitad de cuenta.
+   */
+  useEffect(() => {
+    if (reduced || phase !== 'sealed' || !docVisible) return
+    const stage = stageRef.current
+    if (stage === null) return
+
+    let timer: number | undefined
+    const clear = () => {
+      if (timer === undefined) return
+      window.clearTimeout(timer)
+      timer = undefined
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            if (timer !== undefined) continue
+            timer = window.setTimeout(() => {
+              timer = undefined
+              // `false`: apertura NO pedida por nadie. Mover el foco acá sería
+              // arrancárselo al usuario en mitad de un scroll.
+              openPack(false, false)
+            }, AUTO_OPEN_MS)
+          } else {
+            clear()
+          }
+        }
+      },
+      { threshold: 0.5 },
+    )
+    io.observe(stage)
+
+    return () => {
+      io.disconnect()
+      clear()
+    }
+  }, [reduced, phase, docVisible, openPack])
+
+  /**
+   * LA APERTURA.
+   *
+   * `useLayoutEffect` y no `useEffect`, y es la diferencia entre que se vea bien
+   * o que parpadee: al pasar a `opening` React ya ha escrito `opacity: 1` en los
+   * `<li>`. Un `useEffect` correría DESPUÉS del pintado, así que se vería un
+   * frame con las cuatro cartas puestas justo antes de que GSAP las mande al
+   * punto de partida. `useLayoutEffect` corre entre la mutación del DOM y el
+   * pintado: el navegador nunca llega a dibujar ese frame.
+   *
+   * ⚠ SE ANIMAN LOS `<li>`, NO LOS `<button>`. El bucle por frame REESCRIBE
+   * `style.transform` del botón sesenta veces por segundo; si GSAP escribiera
+   * ahí, cada tween moriría en el siguiente frame. El `<li>` no lo toca nadie
+   * más, así que la salida en arco y la inclinación 3D conviven sin pelearse:
+   * son dos transforms anidados, que es justo lo que hace que la carta parezca
+   * volar Y girar a la vez.
+   *
+   * Sólo `transform` y `opacity`. Nada que dispare layout.
+   */
+  useLayoutEffect(() => {
+    if (phase !== 'opening') return
+
+    const pack = packRef.current
+    const flash = flashRef.current
+    const burst = burstRef.current
+    const cards = wraps.current.filter((el): el is HTMLLIElement => el !== null)
+
+    // Si falta cualquier pieza, la sección NO se queda a medias: se abre seca.
+    // Un roster invisible por un ref nulo es un fallo mucho peor que perderse
+    // una animación.
+    if (pack === null || flash === null || burst === null || cards.length === 0) {
+      phaseRef.current = 'open'
+      setPhase('open')
+      return
+    }
+
+    const sparks = burst.querySelectorAll<HTMLSpanElement>('[data-burst]')
+    const mid = (cards.length - 1) / 2
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        phaseRef.current = 'open'
+        setPhase('open')
+      },
+    })
+
+    tl
+      // 1. Se comprime antes de reventar. El anticipo es lo que hace que el
+      //    reventón se sienta, en vez de simplemente ocurrir.
+      .to(pack, { scale: 0.94, duration: 0.12, ease: 'power2.in' })
+      .to(pack, { scale: 1.06, duration: 0.1, ease: 'power2.out' })
+      .to(flash, { opacity: 1, duration: 0.09, ease: 'none' }, '<')
+      // 2. El sobre se aparta hacia arriba girando y se va.
+      .to(
+        pack,
+        { yPercent: -128, rotate: -9, scale: 1.14, opacity: 0, duration: 0.5, ease: 'power3.in' },
+        '>-0.02',
+      )
+      .to(flash, { opacity: 0, duration: 0.45, ease: 'power2.out' }, '<')
+      // 3. Chispas. Radiales desde el centro, con un desfase mínimo para que no
+      //    salgan las doce clavadas en el mismo frame.
+      .fromTo(
+        sparks,
+        { x: 0, y: 0, scale: 0.5, opacity: 1 },
+        {
+          x: (i: number) => BURST[i].x * BURST_RADIUS,
+          y: (i: number) => BURST[i].y * BURST_RADIUS,
+          scale: 0.2,
+          opacity: 0,
+          duration: 0.7,
+          stagger: 0.012,
+          ease: 'power2.out',
+        },
+        '<',
+      )
+      // 4. Las cartas salen ESCALONADAS. El `xPercent` y el `rotate` iniciales
+      //    se reparten desde el centro de la fila: las de los extremos arrancan
+      //    más abiertas y más giradas, y al converger describen un arco. Con un
+      //    desplazamiento igual para las cuatro sería un simple deslizamiento.
+      //    `back.out` para el rebote de aterrizaje.
+      .fromTo(
+        cards,
+        {
+          opacity: 0,
+          yPercent: 34,
+          scale: 0.82,
+          xPercent: (i: number) => (i - mid) * 16,
+          rotate: (i: number) => (i - mid) * 7,
+        },
+        {
+          opacity: 1,
+          yPercent: 0,
+          scale: 1,
+          xPercent: 0,
+          rotate: 0,
+          duration: 0.78,
+          stagger: 0.09,
+          ease: 'back.out(1.4)',
+          // Se limpia el transform para NO dejar una matriz inline pegada en el
+          // `<li>`: si se repite la animación, GSAP tiene que partir de cero.
+          clearProps: 'transform',
+        },
+        '-=0.36',
+      )
+
+    return () => {
+      tl.kill()
+    }
+  }, [phase])
+
+  /** Al abrirse a petición del usuario, el foco entra en la primera carta. */
+  useEffect(() => {
+    if (phase !== 'open' || !focusOnOpen.current) return
+    focusOnOpen.current = false
+    // `preventScroll` por lo mismo que en `closeCard`: el scroll automático del
+    // foco movería el documento por debajo de Lenis, que no se entera.
+    nodes.current[0]?.root.focus({ preventScroll: true })
+  }, [phase])
+
+  /** Tras "abrir otra vez", el foco viaja al sobre recién montado. */
+  useEffect(() => {
+    if (phase !== 'sealed' || !focusPackAgain.current) return
+    focusPackAgain.current = false
+    packRef.current?.focus({ preventScroll: true })
+  }, [phase])
+
   /**
    * Guarda el nodo y RESUELVE sus tres láminas de una vez.
    *
@@ -684,6 +1324,14 @@ export function Roster(): React.JSX.Element {
       if (art !== null && holo !== null && glare !== null) {
         nodes.current[i] = { root: el, art, holo, glare }
       }
+    },
+    [],
+  )
+
+  /** Guarda el `<li>` que GSAP anima en la apertura. */
+  const bindWrap = useCallback(
+    (i: number) => (el: HTMLLIElement | null) => {
+      wraps.current[i] = el
     },
     [],
   )
@@ -927,16 +1575,37 @@ export function Roster(): React.JSX.Element {
         propaga al documento. Sin esto, en trackpad, terminar el carrusel dispara
         el "atrás" del navegador en algunos sistemas.
       */}
-      <ul
-        ref={rowRef}
-        aria-label={UI.groupLabel}
-        className="flex list-none snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-5 py-8 md:gap-6 md:px-10 lg:justify-center"
-      >
-        {ITEMS.map((artist, i) => {
-          const accent = ACCENT[artist.accent]
-          const art = ART[i]
-          return (
-            <li key={artist.id} className="shrink-0 snap-center">
+      {/*
+        ESCENARIO. Envuelve la fila para que el sobre pueda ir ENCIMA en
+        `absolute` sin sacar a las cartas del flujo: la fila conserva su altura
+        con el sobre puesto, así que al abrirse no hay ni un pixel de salto de
+        layout. Es también el elemento que observa el `IntersectionObserver`.
+      */}
+      <div ref={stageRef} className="relative">
+        <ul
+          ref={rowRef}
+          aria-label={UI.groupLabel}
+          onFocusCapture={onRowFocus}
+          /* `pointer-events-none` con el sobre puesto: las cartas están a
+             opacidad 0 y no se puede poder pulsar lo que no se ve. NO afecta al
+             teclado —el foco pasa igual—, que es justo lo que se quiere. */
+          className={`flex list-none snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-5 py-8 md:gap-6 md:px-10 lg:justify-center ${
+            phase === 'sealed' ? 'pointer-events-none' : ''
+          }`}
+        >
+          {ITEMS.map((artist, i) => {
+            const accent = ACCENT[artist.accent]
+            const art = ART[i]
+            return (
+              <li
+                key={artist.id}
+                ref={bindWrap(i)}
+                className="shrink-0 snap-center"
+                /* Valor SIEMPRE explícito (0 o 1), nunca `undefined`: React sólo
+                   reescribe lo que cambia, y así el estado visual de la carta no
+                   depende de en qué orden acabaron GSAP y el render. */
+                style={{ opacity: phase === 'sealed' ? 0 : 1 }}
+              >
               <button
                 type="button"
                 ref={bindCard(i)}
@@ -976,7 +1645,7 @@ export function Roster(): React.JSX.Element {
                   boxShadow: `inset 0 0 0 1px ${alpha(INK, 8)}, 0 14px 34px -20px ${alpha(accent, 60)}`,
                 }}
               >
-                <Artwork art={art} holoOpacity={HOLO_BASE} />
+                <Artwork art={art} holoOpacity={HOLO_BASE} photo={photoFor(artist)} />
 
                 {/* Velo inferior: es lo que sostiene el nombre sobre el arte.
                     Sólido en la base, así que no deja pasar nada de detrás. */}
@@ -996,6 +1665,20 @@ export function Roster(): React.JSX.Element {
                   style={{ color: alpha(INK, 74) }}
                 >
                   {`${pad(i + 1)} / ${pad(ITEMS.length)}`}
+                </span>
+
+                {/* TIPO DE ACTO — la "rareza" del cromo, arriba a la derecha.
+                    Y es un dato REAL, no un adorno: Rock & Bikes es una banda de
+                    seis personas y presentarla como DJ sería incorrecto.
+                    `aria-hidden` porque el `aria-label` del botón ya nombra la
+                    carta; el dato se anuncia entero en el detalle, donde hay
+                    sitio para decirlo sin atropellar el nombre. */}
+                <span
+                  aria-hidden="true"
+                  className="type-label absolute right-4 top-4 px-2 py-1"
+                  style={{ border: `1px solid ${alpha(accent, 55)}`, color: accent }}
+                >
+                  {UI.kinds[artist.kind]}
                 </span>
 
                 {/* Franja de datos, abajo. `role` sale solo el día que exista. */}
@@ -1029,14 +1712,49 @@ export function Roster(): React.JSX.Element {
                   }}
                 />
               </button>
-            </li>
-          )
-        })}
-      </ul>
+              </li>
+            )
+          })}
+        </ul>
 
-      <p className="type-label px-5 md:px-10" style={{ color: alpha(INK, 26) }}>
-        {UI.hint}
-      </p>
+        {/* EL SOBRE, por encima de la fila. Desaparece del DOM al terminar la
+            apertura: un sobre invisible con `pointer-events-none` seguiría
+            siendo un `<button>` en el orden de tabulación, y tabular hacia un
+            control que ya no existe visualmente es un callejón sin salida. */}
+        {phase !== 'open' && (
+          <Pack
+            packRef={packRef}
+            flashRef={flashRef}
+            burstRef={burstRef}
+            onOpen={() => openPack(true, false)}
+          />
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-3 px-5 md:px-10">
+        {/* La pista de uso habla de inclinar y pulsar cartas: con el sobre
+            puesto todavía no hay ninguna carta a la que aplicarla. */}
+        {phase !== 'sealed' && (
+          <p className="type-label" style={{ color: alpha(INK, 26) }}>
+            {UI.hint}
+          </p>
+        )}
+
+        {/* REPETIR. Discreto y sin `reduced`: ahí no hay animación que repetir.
+            `min-h-11` = 44px de área táctil, el mínimo que se respeta en todo
+            el proyecto. */}
+        {!reduced && phase === 'open' && (
+          <button
+            type="button"
+            onClick={replayPack}
+            data-cursor="hover"
+            className="type-label inline-flex min-h-11 items-center px-4 transition-colors duration-300"
+            style={{ border: `1px solid ${alpha(INK, 16)}`, color: alpha(INK, 50) }}
+          >
+            {UI.pack.replay}
+          </button>
+        )}
+      </div>
 
       {openIndex >= 0 && (
         <ArtistDialog artist={ITEMS[openIndex]} index={openIndex} onClose={closeCard} />

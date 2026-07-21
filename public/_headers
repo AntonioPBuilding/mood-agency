@@ -1,0 +1,53 @@
+# Cabeceras para Cloudflare Pages.
+#
+# Este archivo se sirve tal cual desde `public/`: Cloudflare lo lee del build y
+# aplica las reglas por ruta. No es código, no se compila, y por eso mismo es
+# fácil que se quede olvidado — si cambia la estructura de `dist/`, revisalo.
+
+# ── Assets con hash en el nombre ──────────────────────────────────────────────
+# Vite renombra cada bundle con un hash de su contenido (`index-a1b2c3.js`). Si
+# el contenido cambia, cambia el nombre, así que el archivo viejo NUNCA se pisa:
+# se puede cachear para siempre sin miedo. `immutable` además le dice al
+# navegador que ni se moleste en revalidar.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# ── El HTML ───────────────────────────────────────────────────────────────────
+# Lo contrario: el HTML NO lleva hash y es quien apunta a los assets nuevos. Si
+# se cachea, el visitante se queda con la versión vieja para siempre aunque
+# despleguemos. `must-revalidate` obliga a preguntar en cada visita.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# ── Marca y tarjeta social ────────────────────────────────────────────────────
+# Cambian poquísimo pero no llevan hash. Un día de caché es el equilibrio: si
+# rehacemos el `og.png`, las plataformas lo recogen pronto.
+/og.png
+  Cache-Control: public, max-age=86400
+/favicon.svg
+  Cache-Control: public, max-age=86400
+/icon.svg
+  Cache-Control: public, max-age=86400
+/apple-touch-icon.png
+  Cache-Control: public, max-age=86400
+/site.webmanifest
+  Cache-Control: public, max-age=86400
+
+# ── Fotos de los artistas ─────────────────────────────────────────────────────
+# Se sustituyen a mano y sin hash. Una semana: bastante ahorro sin que una foto
+# nueva tarde un mes en verse.
+/artists/*
+  Cache-Control: public, max-age=604800
+
+# ── Seguridad ─────────────────────────────────────────────────────────────────
+# Deliberadamente SIN `Content-Security-Policy`: la landing usa estilos inline
+# generados por GSAP y shaders compilados en runtime, y una CSP mal calibrada
+# rompería la escena entera en producción sin avisar en desarrollo. Se añade
+# cuando alguien pueda probarla en un preview de verdad, no antes.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: geolocation=(), microphone=(), camera=()

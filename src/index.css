@@ -243,6 +243,63 @@
   height: 100svh;
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   EL SOBRE DE CROMOS (capítulo `gallery` · `@/sections/Roster`)
+
+   Dos animaciones de REPOSO, y las dos viven en CSS a propósito: son bucles
+   infinitos que sólo dicen "esto se puede pulsar". Meterlas en el ticker de GSAP
+   costaría trabajo de JS por frame para algo que el compositor resuelve solo, y
+   encima seguirían corriendo cuando el sobre ya no está en pantalla.
+
+   La apertura —esa sí— es GSAP: tiene que encadenarse con la salida de las
+   cartas y terminar en un instante conocido.
+
+   Van sobre un span INTERIOR, nunca sobre el `<button>`: GSAP se adueña del
+   `transform` del botón al abrir, y dos dueños del mismo transform es un
+   parpadeo garantizado.
+
+   Sólo `transform` y `opacity`. El bloque de `prefers-reduced-motion` de más
+   abajo las apaga a las dos sin que haya que declarar nada extra.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+@keyframes mood-pack-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.022);
+  }
+}
+
+/* El brillo recorre el sobre en diagonal y descansa: un barrido continuo se
+   vuelve ruido de fondo y se deja de ver a los diez segundos. */
+@keyframes mood-pack-sheen {
+  0% {
+    transform: translate3d(-115%, 0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  46% {
+    opacity: 1;
+  }
+  60%,
+  100% {
+    transform: translate3d(115%, 0, 0);
+    opacity: 0;
+  }
+}
+
+@utility pack-breathe {
+  animation: mood-pack-breathe 3.6s var(--ease-out-expo) infinite;
+}
+
+@utility pack-sheen {
+  animation: mood-pack-sheen 4.2s var(--ease-out-expo) infinite;
+}
+
 /* El usuario pidió menos movimiento. Se respeta: misma historia, sin viaje. */
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -132,6 +132,16 @@ export const HOME_URL = `${SITE.url}/`
 /* ─────────────────────────────  ARTISTAS  ──────────────────────────────── */
 
 /**
+ * QUÉ CLASE DE ACTO SUBE AL ESCENARIO.
+ *
+ * No es un adorno de diseño: `Rock & Bikes` es una BANDA de seis personas (se ve
+ * en la foto que entregó el cliente, camiseta incluida) y `Malbie + Richa` son
+ * dos. Presentarlos a todos como "DJs" es un dato incorrecto, y acá no se
+ * publica un dato incorrecto ni por comodidad de maquetación.
+ */
+export type ActKind = 'dj' | 'duo' | 'band'
+
+/**
  * Un artista del roster de Mood Agency.
  *
  * ⚠ DE ESTOS CUATRO SÓLO SE CONOCE EL NOMBRE. Nadie ha confirmado género
@@ -144,11 +154,17 @@ export const HOME_URL = `${SITE.url}/`
  * la clave estable y el acento decide qué neón domina su carta. Inventarlos no
  * engaña a nadie porque no afirman nada del mundo real.
  *
- * ⚠ NO HAY CAMPO DE IMAGEN, Y ES A PROPÓSITO. Las cartas no llevan foto: el
- * "retrato" se GENERA de forma determinista a partir del nombre (ver
- * `@/sections/Roster`). Mismo nombre, misma carta, siempre. Así no hace falta
- * pedirle al cliente cuatro fotos con derechos antes de poder publicar, y nunca
- * hay un hueco ni un placeholder de imagen rota.
+ * ── LA FOTO (`image`) ───────────────────────────────────────────────────────
+ *
+ * El cliente entrega UNA foto por artista y las coloca ÉL en `public/artists/`.
+ * La ruta se declara acá aunque el archivo todavía no exista: `Roster` trata el
+ * fallo de carga como un caso NORMAL, no como un error. Si el JPG no está, la
+ * carta cae al arte generativo y no se ve ni un icono roto ni un hueco. O sea:
+ * la landing es publicable HOY y mejora sola el día que el cliente suba los
+ * cuatro archivos, sin tocar una línea de código.
+ *
+ * El arte generativo NO se retiró: sigue siendo el fondo y el marco de la carta,
+ * y es el retrato completo mientras no haya foto.
  */
 export interface Artist {
   /** Slug estable. Clave de React y semilla legible del arte generativo. */
@@ -157,6 +173,18 @@ export interface Artist {
   name: string
   /** Qué neón de Mood Agency domina su carta. Presentación, no biografía. */
   accent: 'violet' | 'blue' | 'red'
+  /**
+   * QUÉ CLASE DE ACTO ES. Dato REAL y verificable, no una etiqueta de relleno:
+   * meter una banda de seis personas en una lista titulada "DJs" es información
+   * incorrecta, y en la carta funciona como la rareza de un cromo.
+   */
+  kind: ActKind
+  /**
+   * Ruta ABSOLUTA desde la raíz servida (`public/`). Opcional porque el día que
+   * entre un artista nuevo su foto puede tardar, y la carta tiene que existir
+   * igual. Ver el bloque de arriba: que el archivo falte no rompe nada.
+   */
+  image?: string
 
   /* ── TODO LO DE ABAJO ESTÁ PENDIENTE DEL CLIENTE ─────────────────────────
      Mientras siga `undefined` la web no dice nada de ese campo: no hay texto
@@ -184,12 +212,17 @@ export interface Artist {
  * El reparto de acentos es deliberado: cuatro cartas del mismo violeta se leen
  * como una sola mancha. Se repite violeta en la cuarta porque la paleta de Mood
  * Agency tiene tres neones, no cuatro.
+ *
+ * ⚠ LAS RUTAS DE `image` APUNTAN A ARCHIVOS QUE EL CLIENTE TODAVÍA NO HA SUBIDO.
+ * Las carpetas existen y están vacías. Es deliberado: el nombre del archivo está
+ * FIJADO (`01.jpg`) para que subirlo sea la única acción pendiente, y hasta que
+ * ocurra la carta se dibuja con el arte generativo. No hay estado roto posible.
  */
 export const ARTISTS: readonly Artist[] = [
-  { id: 'morales', name: 'DJ Morales', accent: 'violet' },
-  { id: 'fati-coronas', name: 'DJ Fati Coronas', accent: 'blue' },
-  { id: 'malbie-richa', name: 'Malbie + Richa', accent: 'red' },
-  { id: 'rock-bikes', name: 'Rock & Bikes', accent: 'violet' },
+  { id: 'morales', name: 'DJ Morales', accent: 'violet', kind: 'dj', image: '/artists/morales/01.jpg' },
+  { id: 'fati-coronas', name: 'DJ Fati Coronas', accent: 'blue', kind: 'dj', image: '/artists/fati-coronas/01.jpg' },
+  { id: 'malbie-richa', name: 'Malbie + Richa', accent: 'red', kind: 'duo', image: '/artists/malbie-richa/01.jpg' },
+  { id: 'rock-bikes', name: 'Rock & Bikes', accent: 'violet', kind: 'band', image: '/artists/rock-bikes/01.jpg' },
 ]
 
 /**
@@ -211,7 +244,14 @@ const EVENT_SERVICES: readonly EventService[] = [
   { n: '01', title: 'Organización de eventos', desc: 'Concepto, producción y dirección de principio a fin.' },
   {
     n: '02',
-    title: 'DJs & Booking',
+    /* ⚠ NO ES "DJs & Booking", Y EL MATIZ ES UN DATO, NO UN GUSTO.
+       Debajo de este título se lista `roster`, y ese roster tiene dos DJs, un
+       dúo y una BANDA (`Rock & Bikes`, seis personas). Titularlo "DJs" describía
+       mal a la mitad de la lista: quien busca una banda para su evento leía
+       "DJs" y se iba. El ajuste es el mínimo posible — se añade la palabra que
+       faltaba — y sigue conteniendo "DJs", que es lo que la gente escribe en
+       Google. Ver `ActKind` y el campo `kind` de `Artist`. */
+    title: 'DJs, bandas & booking',
     desc: 'Line-ups curados. Artistas que entienden el sitio y la hora.',
     /* DERIVADO de `ARTISTS`, nunca escrito a mano. Los mismos cuatro nombres se
        muestran en dos sitios —acá y en las cartas del capítulo `gallery`— y dos
@@ -272,6 +312,36 @@ export const EVENTS = {
     /** Glifo del cursor magnético sobre una carta. Dos palabras como mucho. */
     cardCta: 'Ver carta',
     sep: ' · ',
+    /**
+     * TIPO DE ACTO, tal y como se imprime en el marco de la carta.
+     *
+     * Las claves son los valores de `ActKind`: así el día que aparezca un
+     * quinto tipo, TypeScript obliga a traducirlo acá antes de compilar. Nada
+     * de `kind.toUpperCase()` en un `.tsx` — eso no es copy, es un accidente.
+     */
+    kinds: {
+      dj: 'DJ',
+      duo: 'Dúo',
+      band: 'Banda',
+    } as const satisfies Record<ActKind, string>,
+    /** Prefijo del `alt` de la foto. Se compone con el nombre del artista. */
+    photoAlt: 'Fotografía de',
+    /**
+     * EL SOBRE DE CROMOS. La sección arranca cerrada y se abre al pulsar.
+     *
+     * Ni una palabra de acá afirma nada de nadie: son la marca, una acción y un
+     * recuento REAL (`ARTISTS.length`), que es todo lo que un sobre necesita.
+     */
+    pack: {
+      /** `aria-label` del sobre cerrado. Lo que oye quien no lo ve. */
+      label: 'Abrir el sobre de cartas del roster de Mood Agency',
+      /** Llamada visible impresa en el sobre. */
+      cta: 'Abrir el sobre',
+      /** Se compone con el número de artistas: "04 cartas". */
+      countLabel: 'cartas',
+      /** Repetir la animación. La gente quiere verla dos veces; negarlo es peor. */
+      replay: 'Abrir otra vez',
+    },
     /** Encabezados del detalle. Sólo se pintan si el campo tiene valor. */
     fields: {
       role: 'Qué hace',
